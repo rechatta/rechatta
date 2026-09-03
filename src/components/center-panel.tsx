@@ -18,7 +18,7 @@ import {
   IconWrench,
   IconLink,
 } from "./icons";
-import { agents, type AgentKey } from "@/lib/mock-data";
+import { agents, sessions, type AgentKey, type Message } from "@/lib/mock-data";
 
 const quickActions = [
   { icon: IconSparkle, title: "Ask an agent", desc: "Chat with any specialized AI agent instantly" },
@@ -26,21 +26,121 @@ const quickActions = [
   { icon: IconCompass, title: "Explore agents", desc: "Browse curated agents for every task" },
 ];
 
+function WelcomeView() {
+  return (
+    <>
+      <IconSparkle className="mb-3.5 size-[88px] animate-[drift_7s_ease-in-out_infinite] [&_path]:fill-[url(#sparkleGrad)]" />
+      <h1 className="text-center text-[clamp(26px,3vw,34px)] font-bold tracking-tight text-text-1">Welcome, Maya!</h1>
+      <p className="mt-1.5 text-center text-[15px] text-text-2">Which agent should we bring in today?</p>
+
+      <div className="mt-7.5 grid w-full max-w-[720px] grid-cols-3 gap-3.5 max-[860px]:grid-cols-1">
+        {quickActions.map(({ icon: Icon, title, desc }) => (
+          <button
+            key={title}
+            className="rounded-2xl border border-border bg-surface p-4 text-left shadow-card transition hover:-translate-y-0.5 hover:border-border-soft hover:shadow-card-hover"
+          >
+            <div className="mb-3 flex size-8.5 items-center justify-center rounded-[10px] bg-surface-inset text-text-1">
+              <Icon className="size-[18px]" />
+            </div>
+            <div className="mb-1 text-[14.5px] font-bold text-text-1">{title}</div>
+            <div className="text-[12.8px] leading-snug text-text-2">{desc}</div>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function AssistantMessage({ message }: { message: Message }) {
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
+  const agent = agents.find((a) => a.key === message.agent);
+
+  return (
+    <div>
+      <div className="text-[14px] leading-relaxed text-text-1">{message.content}</div>
+      <div className="mt-2 flex items-center gap-0.5">
+        <button className="flex size-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-hover hover:text-text-1" title="Copy response">
+          <IconCopy className="size-[15px]" />
+        </button>
+        <button
+          className={`flex size-7 items-center justify-center rounded-lg hover:bg-surface-hover hover:text-text-1 ${feedback === "up" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
+          title="Good response"
+          onClick={() => setFeedback((f) => (f === "up" ? null : "up"))}
+        >
+          <IconThumbsUp className="size-[15px]" />
+        </button>
+        <button
+          className={`flex size-7 items-center justify-center rounded-lg hover:bg-surface-hover hover:text-text-1 ${feedback === "down" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
+          title="Bad response"
+          onClick={() => setFeedback((f) => (f === "down" ? null : "down"))}
+        >
+          <IconThumbsDown className="size-[15px]" />
+        </button>
+        <span className="flex-1" />
+        {agent && message.sources && (
+          <div className="relative">
+            <button
+              className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 pl-2 text-[11.5px] font-semibold text-text-2 hover:bg-surface-hover hover:text-text-1"
+              onClick={() => setSourceOpen((v) => !v)}
+            >
+              <span className="size-1.5 rounded-full" style={{ background: agent.color }} />
+              {agent.name} agent · {message.sources.length} sources
+              <IconChevron className="size-[15px]" />
+            </button>
+            {sourceOpen && (
+              <div className="absolute bottom-[34px] right-0 z-40 flex w-[270px] flex-col gap-0.5 rounded-xl border border-border bg-surface p-2.5 shadow-card-hover">
+                <div className="px-1 pb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-text-3">Tools used</div>
+                {message.sources.map((source) => {
+                  const Icon = source.icon === "link" ? IconLink : IconWrench;
+                  return (
+                    <div key={source.label} className="flex items-start gap-2 px-1 py-1.5 text-[12.2px] leading-snug text-text-2">
+                      <Icon className="mt-px size-[15px] flex-none text-text-3" />
+                      {source.label}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ThreadView({ messages }: { messages: Message[] }) {
+  return (
+    <div className="flex w-full max-w-[720px] flex-col gap-4">
+      {messages.map((message, i) =>
+        message.role === "user" ? (
+          <div key={i} className="flex justify-end">
+            <div className="max-w-[80%] rounded-2xl rounded-br-md bg-surface-inset px-3.5 py-2.5 text-[13.8px]">{message.content}</div>
+          </div>
+        ) : (
+          <AssistantMessage key={i} message={message} />
+        )
+      )}
+    </div>
+  );
+}
+
 export function CenterPanel({
+  activeSessionId,
   onToggleSidebar,
   onToggleHistory,
 }: {
+  activeSessionId: string | null;
   onToggleSidebar: () => void;
   onToggleHistory: () => void;
 }) {
   const [agentKey, setAgentKey] = useState<AgentKey>("auto");
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
-  const [sourceOpen, setSourceOpen] = useState(false);
-  const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const selectedAgent = agents.find((a) => a.key === agentKey)!;
+  const activeSession = sessions.find((s) => s.id === activeSessionId);
 
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setValue(e.target.value);
@@ -51,7 +151,7 @@ export function CenterPanel({
   }
 
   return (
-    <main className="relative flex min-w-0 flex-col bg-surface min-[1181px]:pr-[360px]">
+    <main className="relative flex min-h-0 min-w-0 flex-col bg-surface min-[1181px]:pr-[360px]">
       <div className="flex items-center justify-between border-b border-border px-4 py-3.5 min-[1181px]:hidden">
         <button className="flex rounded-xl p-2 text-text-1 hover:bg-surface-hover" onClick={onToggleSidebar} aria-label="Open navigation" title="Open navigation">
           <IconMenu className="size-[18px]" />
@@ -62,87 +162,8 @@ export function CenterPanel({
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col items-center overflow-y-auto px-8 pb-4 pt-9">
-        <IconSparkle className="mb-3.5 size-[88px] animate-[drift_7s_ease-in-out_infinite] [&_path]:fill-[url(#sparkleGrad)]" />
-        <h1 className="text-center text-[clamp(26px,3vw,34px)] font-bold tracking-tight text-text-1">Welcome, Maya!</h1>
-        <p className="mt-1.5 text-center text-[15px] text-text-2">Which agent should we bring in today?</p>
-
-        <div className="mt-7.5 grid w-full max-w-[720px] grid-cols-3 gap-3.5 max-[860px]:grid-cols-1">
-          {quickActions.map(({ icon: Icon, title, desc }) => (
-            <button
-              key={title}
-              className="rounded-2xl border border-border bg-surface p-4 text-left shadow-card transition hover:-translate-y-0.5 hover:border-border-soft hover:shadow-card-hover"
-            >
-              <div className="mb-3 flex size-8.5 items-center justify-center rounded-[10px] bg-surface-inset text-text-1">
-                <Icon className="size-[18px]" />
-              </div>
-              <div className="mb-1 text-[14.5px] font-bold text-text-1">{title}</div>
-              <div className="text-[12.8px] leading-snug text-text-2">{desc}</div>
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-9 w-full max-w-[720px] text-[11px] font-bold uppercase tracking-wider text-text-3">Example response</div>
-        <div className="mt-3.5 flex w-full max-w-[720px] flex-col gap-4">
-          <div className="flex justify-end">
-            <div className="max-w-[80%] rounded-2xl rounded-br-md bg-surface-inset px-3.5 py-2.5 text-[13.8px]">
-              Summarize last week&apos;s support tickets by theme
-            </div>
-          </div>
-          <div>
-            <div className="text-[14px] leading-relaxed text-text-1">
-              Three themes stood out: billing confusion (38%), onboarding friction (29%), and API rate-limit questions
-              (18%). Billing tickets spiked right after the Sept 1 pricing update.
-            </div>
-            <div className="mt-2 flex items-center gap-0.5">
-              <button className="flex size-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-hover hover:text-text-1" title="Copy response">
-                <IconCopy className="size-[15px]" />
-              </button>
-              <button
-                className={`flex size-7 items-center justify-center rounded-lg hover:bg-surface-hover hover:text-text-1 ${feedback === "up" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
-                title="Good response"
-                onClick={() => setFeedback((f) => (f === "up" ? null : "up"))}
-              >
-                <IconThumbsUp className="size-[15px]" />
-              </button>
-              <button
-                className={`flex size-7 items-center justify-center rounded-lg hover:bg-surface-hover hover:text-text-1 ${feedback === "down" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
-                title="Bad response"
-                onClick={() => setFeedback((f) => (f === "down" ? null : "down"))}
-              >
-                <IconThumbsDown className="size-[15px]" />
-              </button>
-              <span className="flex-1" />
-              <div className="relative">
-                <button
-                  className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 pl-2 text-[11.5px] font-semibold text-text-2 hover:bg-surface-hover hover:text-text-1"
-                  onClick={() => setSourceOpen((v) => !v)}
-                >
-                  <span className="size-1.5 rounded-full" style={{ background: "var(--agent-data)" }} />
-                  Data agent · 3 sources
-                  <IconChevron className="size-[15px]" />
-                </button>
-                {sourceOpen && (
-                  <div className="absolute bottom-[34px] right-0 z-40 flex w-[270px] flex-col gap-0.5 rounded-xl border border-border bg-surface p-2.5 shadow-card-hover">
-                    <div className="px-1 pb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-text-3">Tools used</div>
-                    <div className="flex items-start gap-2 px-1 py-1.5 text-[12.2px] leading-snug text-text-2">
-                      <IconWrench className="mt-px size-[15px] flex-none text-text-3" />
-                      Queried support_tickets.csv (1,204 rows)
-                    </div>
-                    <div className="flex items-start gap-2 px-1 py-1.5 text-[12.2px] leading-snug text-text-2">
-                      <IconWrench className="mt-px size-[15px] flex-none text-text-3" />
-                      Zendesk API — last 7 days
-                    </div>
-                    <div className="flex items-start gap-2 px-1 py-1.5 text-[12.2px] leading-snug text-text-2">
-                      <IconLink className="mt-px size-[15px] flex-none text-text-3" />
-                      pricing-update-sept.md
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-8 pb-4 pt-9">
+        {activeSession?.messages ? <ThreadView messages={activeSession.messages} /> : <WelcomeView />}
       </div>
 
       <div className="flex-none px-8 pb-6 pt-4.5">

@@ -15,6 +15,15 @@ export const agentBadgeColors: Record<Exclude<AgentKey, "auto">, { fg: string; b
   data: { fg: "var(--agent-data)", bg: "var(--agent-data-bg)" },
 };
 
+export type Source = { icon: "wrench" | "link"; label: string };
+
+export type Message = {
+  role: "user" | "assistant";
+  content: string;
+  agent?: AgentKey;
+  sources?: Source[];
+};
+
 export type Session = {
   id: string;
   title: string;
@@ -22,9 +31,31 @@ export type Session = {
   time: string;
   agents: AgentKey[];
   preview?: number[];
+  messages?: Message[];
 };
 
 export const sessions: Session[] = [
+  {
+    id: "customer-feedback",
+    title: "Customer feedback themes",
+    description: "Clustering support tickets into recurring issues",
+    time: "1d ago",
+    agents: ["data"],
+    messages: [
+      { role: "user", content: "Summarize last week's support tickets by theme" },
+      {
+        role: "assistant",
+        agent: "data",
+        content:
+          "Three themes stood out: billing confusion (38%), onboarding friction (29%), and API rate-limit questions (18%). Billing tickets spiked right after the Sept 1 pricing update.",
+        sources: [
+          { icon: "wrench", label: "Queried support_tickets.csv (1,204 rows)" },
+          { icon: "wrench", label: "Zendesk API — last 7 days" },
+          { icon: "link", label: "pricing-update-sept.md" },
+        ],
+      },
+    ],
+  },
   {
     id: "research-sprint",
     title: "Research sprint",
@@ -46,12 +77,5 @@ export const sessions: Session[] = [
     description: "Refactoring the auth middleware and catching edge cases",
     time: "5h ago",
     agents: ["code"],
-  },
-  {
-    id: "customer-feedback",
-    title: "Customer feedback themes",
-    description: "Clustering support tickets into recurring issues",
-    time: "1d ago",
-    agents: ["data"],
   },
 ];

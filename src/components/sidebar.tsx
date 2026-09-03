@@ -25,7 +25,15 @@ const navItems = [
   { label: "Usage", icon: IconBarChart },
 ];
 
-export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
+export function Sidebar({
+  open,
+  onNavigate,
+  onHomeClick,
+}: {
+  open: boolean;
+  onNavigate: () => void;
+  onHomeClick: () => void;
+}) {
   const [active, setActive] = useState("Home");
   const [toolsOpen, setToolsOpen] = useState(true);
 
@@ -50,6 +58,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
             onClick={() => {
               setActive(label);
               onNavigate();
+              if (label === "Home") onHomeClick();
             }}
           >
             <Icon className="size-[18px] flex-none" />

@@ -9,6 +9,7 @@ import { SvgDefs } from "./svg-defs";
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const closePanels = () => {
     setSidebarOpen(false);
@@ -35,14 +36,23 @@ export function AppShell() {
       />
 
       <div className="relative grid h-full w-full grid-cols-[240px_1fr] overflow-hidden bg-surface max-[860px]:grid-cols-1">
-        <Sidebar open={sidebarOpen} onNavigate={closePanels} />
+        <Sidebar open={sidebarOpen} onNavigate={closePanels} onHomeClick={() => setActiveSessionId(null)} />
         <CenterPanel
+          activeSessionId={activeSessionId}
           onToggleSidebar={() => setSidebarOpen((v) => !v)}
           onToggleHistory={() => setHistoryOpen((v) => !v)}
         />
       </div>
 
-      <HistoryPanel open={historyOpen} />
+      <HistoryPanel
+        open={historyOpen}
+        activeSessionId={activeSessionId}
+        onSelectSession={(id) => {
+          setActiveSessionId(id);
+          closePanels();
+        }}
+        onNewChat={() => setActiveSessionId(null)}
+      />
       <SvgDefs />
     </div>
   );

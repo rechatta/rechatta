@@ -4,7 +4,17 @@ import { useMemo, useState } from "react";
 import { IconPlus, IconSearch, IconArchive, IconTrash, IconX, IconCheck } from "./icons";
 import { agentBadgeColors, sessions } from "@/lib/mock-data";
 
-export function HistoryPanel({ open }: { open: boolean }) {
+export function HistoryPanel({
+  open,
+  activeSessionId,
+  onSelectSession,
+  onNewChat,
+}: {
+  open: boolean;
+  activeSessionId: string | null;
+  onSelectSession: (id: string) => void;
+  onNewChat: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -82,8 +92,13 @@ export function HistoryPanel({ open }: { open: boolean }) {
       <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-3">
         {visible.map((session) => {
           const checked = selected.has(session.id);
+          const active = session.id === activeSessionId;
           return (
-            <div key={session.id} className="flex cursor-pointer gap-2.5 rounded-2xl p-2 hover:bg-surface-hover">
+            <div
+              key={session.id}
+              className={`flex cursor-pointer gap-2.5 rounded-2xl p-2 hover:bg-surface-hover ${active ? "bg-surface-inset" : ""}`}
+              onClick={() => onSelectSession(session.id)}
+            >
               <button
                 className={`mt-0.5 flex size-[17px] flex-none items-center justify-center rounded-md border transition-colors ${
                   checked ? "border-text-1 bg-text-1 text-surface" : "border-border bg-surface"
@@ -135,7 +150,7 @@ export function HistoryPanel({ open }: { open: boolean }) {
       </div>
 
       <div className="p-3.5 pt-2">
-        <button className="cta-pill">
+        <button className="cta-pill" onClick={onNewChat}>
           <span className="cta-orb orb size-6">
             <IconPlus className="size-[15px]" />
           </span>
