@@ -1,9 +1,6 @@
 @import "tailwindcss";
 
 :root {
-  --bg-1: #dadad9;
-  --bg-2: #f3c9a4;
-  --bg-3: #eeb9b8;
   --surface: #ffffff;
   --surface-inset: #f7f7f6;
   --surface-hover: #f1f1ef;
@@ -36,9 +33,6 @@
 
   --shadow-card: 0 1px 2px rgba(20, 20, 26, 0.05);
   --shadow-card-hover: 0 14px 32px -16px rgba(20, 20, 26, 0.18);
-  --shadow-shell: 0 30px 80px -30px rgba(20, 20, 26, 0.35), 0 10px 30px -15px rgba(20, 20, 26, 0.2);
-  --shadow-history: 0 60px 120px -30px rgba(15, 15, 20, 0.5), 0 24px 56px -20px rgba(15, 15, 20, 0.35),
-    0 6px 16px -4px rgba(15, 15, 20, 0.18);
   --shadow-orb-glow: 0 0 10px rgba(90, 90, 255, 0.28);
   --shadow-deep-glow: 0 4px 12px -4px rgba(124, 58, 237, 0.5);
 
@@ -47,9 +41,6 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg-1: #1a1a1d;
-    --bg-2: #3c2a20;
-    --bg-3: #2c2233;
     --surface: #1c1c1f;
     --surface-inset: #232326;
     --surface-hover: #2a2a2e;
@@ -67,15 +58,11 @@
     --agent-data-bg: #332212;
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-card-hover: 0 14px 32px -16px rgba(0, 0, 0, 0.55);
-    --shadow-shell: 0 30px 90px -30px rgba(0, 0, 0, 0.7), 0 10px 30px -15px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --bg-1: #1a1a1d;
-  --bg-2: #3c2a20;
-  --bg-3: #2c2233;
   --surface: #1c1c1f;
   --surface-inset: #232326;
   --surface-hover: #2a2a2e;
@@ -93,7 +80,6 @@
   --agent-data-bg: #332212;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-card-hover: 0 14px 32px -16px rgba(0, 0, 0, 0.55);
-  --shadow-shell: 0 30px 90px -30px rgba(0, 0, 0, 0.7), 0 10px 30px -15px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
 }
 
@@ -131,8 +117,6 @@
 
   --shadow-card: var(--shadow-card);
   --shadow-card-hover: var(--shadow-card-hover);
-  --shadow-shell: var(--shadow-shell);
-  --shadow-history: var(--shadow-history);
   --shadow-orb-glow: var(--shadow-orb-glow);
   --shadow-deep-glow: var(--shadow-deep-glow);
 
@@ -170,7 +154,7 @@ body {
 
 body {
   margin: 0;
-  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-3) 58%, var(--bg-2) 100%);
+  background: var(--surface-inset);
 }
 
 h1,

@@ -27,7 +27,7 @@ export function HistoryPanel({ open }: { open: boolean }) {
 
   return (
     <aside
-      className={`absolute z-[25] flex w-[340px] flex-col overflow-hidden rounded-[28px] border border-border-soft bg-surface shadow-history
+      className={`absolute z-[25] flex w-[340px] flex-col overflow-hidden rounded-[28px] border border-border-soft bg-surface
         top-5 right-5 bottom-5 [animation:pop-in_0.32s_cubic-bezier(0.16,1,0.3,1)_both] [transform-origin:top_right]
         max-[1180px]:top-3 max-[1180px]:right-3 max-[1180px]:bottom-3 max-[1180px]:w-[min(340px,86%)]
         max-[1180px]:animate-none max-[1180px]:transition-transform max-[1180px]:duration-200
