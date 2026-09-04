@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { useChat } from "@ai-sdk/react";
 import {
   IconSparkle,
   IconPencil,
@@ -18,7 +20,32 @@ import {
   IconWrench,
   IconLink,
 } from "./icons";
-import { agents, sessions, type AgentKey, type Message } from "@/lib/mock-data";
+import { agents, sessions, type AgentKey, type Message, type Session, type Source } from "@/lib/mock-data";
+
+type ChatMetadata = { agent?: AgentKey; sources?: Source[] };
+type ChatMessage = UIMessage<ChatMetadata>;
+
+function seedMessages(session?: Session): ChatMessage[] {
+  if (!session?.messages) return [];
+  return session.messages.map((m, i) => ({
+    id: `${session.id}-${i}`,
+    role: m.role,
+    parts: [{ type: "text", text: m.content }],
+    metadata: { agent: m.agent, sources: m.sources },
+  }));
+}
+
+function toDisplayMessages(messages: ChatMessage[], fallbackAgent: AgentKey): Message[] {
+  return messages.map((m) => ({
+    role: m.role === "user" ? "user" : "assistant",
+    content: m.parts
+      .filter((p): p is Extract<ChatMessage["parts"][number], { type: "text" }> => p.type === "text")
+      .map((p) => p.text)
+      .join(""),
+    agent: m.role === "assistant" ? (m.metadata?.agent ?? fallbackAgent) : undefined,
+    sources: m.metadata?.sources,
+  }));
+}
 
 const quickActions = [
   { icon: IconSparkle, title: "Ask an agent", desc: "Chat with any specialized AI agent instantly" },
@@ -142,12 +169,35 @@ export function CenterPanel({
   const selectedAgent = agents.find((a) => a.key === agentKey)!;
   const activeSession = sessions.find((s) => s.id === activeSessionId);
 
+  const { messages, sendMessage, status } = useChat<ChatMessage>({
+    id: activeSessionId ?? "draft",
+    messages: seedMessages(activeSession),
+    transport: new DefaultChatTransport({ api: "/api/chat", body: () => ({ agentKey }) }),
+  });
+  const displayMessages = toDisplayMessages(messages, agentKey);
+  const isBusy = status === "submitted" || status === "streaming";
+
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setValue(e.target.value);
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }
+
+  function submit() {
+    const text = value.trim();
+    if (!text || isBusy) return;
+    sendMessage({ text });
+    setValue("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
   }
 
   return (
@@ -163,7 +213,7 @@ export function CenterPanel({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-8 pb-4 pt-9">
-        {activeSession?.messages ? <ThreadView messages={activeSession.messages} /> : <WelcomeView />}
+        {displayMessages.length > 0 ? <ThreadView messages={displayMessages} /> : <WelcomeView />}
       </div>
 
       <div className="flex-none px-8 pb-6 pt-4.5">
@@ -175,6 +225,7 @@ export function CenterPanel({
               rows={1}
               value={value}
               onChange={handleInput}
+              onKeyDown={handleKeyDown}
               placeholder="Ask anything, or type @ to bring in an agent..."
               className="min-h-6 max-h-[120px] flex-1 resize-none border-none bg-transparent text-[14.5px] text-text-1 outline-none placeholder:text-text-3"
             />
@@ -219,7 +270,13 @@ export function CenterPanel({
             <button className="flex size-8.5 items-center justify-center rounded-full bg-surface-inset text-text-2 hover:bg-surface-hover hover:text-text-1" aria-label="Voice input" title="Voice input">
               <IconMic className="size-[18px]" />
             </button>
-            <button className="orb size-8.5" aria-label="Send message" title="Send message">
+            <button
+              className="orb size-8.5 disabled:opacity-40"
+              aria-label="Send message"
+              title="Send message"
+              onClick={submit}
+              disabled={isBusy || !value.trim()}
+            >
               <IconArrowUp className="size-[18px]" />
             </button>
           </div>

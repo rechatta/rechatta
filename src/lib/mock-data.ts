@@ -15,6 +15,14 @@ export const agentBadgeColors: Record<Exclude<AgentKey, "auto">, { fg: string; b
   data: { fg: "var(--agent-data)", bg: "var(--agent-data-bg)" },
 };
 
+export const agentSystemPrompts: Record<AgentKey, string> = {
+  auto: "You are Rechatta, a helpful AI assistant. Answer clearly and concisely.",
+  research: "You are Rechatta's Research agent. Help the user analyze topics, compare sources, and reason through open-ended questions. Be thorough but concise.",
+  code: "You are Rechatta's Code agent. Help the user write, debug, and review code. Prefer showing working code over long explanations.",
+  writing: "You are Rechatta's Writing agent. Help the user draft, edit, and refine written content. Match the tone they ask for.",
+  data: "You are Rechatta's Data agent. Help the user analyze data, spot trends, and explain findings in plain language.",
+};
+
 export type Source = { icon: "wrench" | "link"; label: string };
 
 export type Message = {
