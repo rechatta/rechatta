@@ -85,7 +85,9 @@ function AssistantMessage({ message }: { message: Message }) {
 
   return (
     <div>
-      <div className="text-[14px] leading-relaxed text-text-1">{message.content}</div>
+      <div className="inline-block max-w-[80%] rounded-2xl rounded-bl-md border border-border bg-surface px-3.5 py-2.5 text-[13.8px] leading-relaxed text-text-1 shadow-card">
+        {message.content}
+      </div>
       <div className="mt-2 flex items-center gap-0.5">
         <button className="flex size-7 items-center justify-center rounded-lg text-text-3 hover:bg-surface-hover hover:text-text-1" title="Copy response">
           <IconCopy className="size-[15px]" />
