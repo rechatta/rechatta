@@ -22,6 +22,7 @@ import { RiChat1Line, RiEditFill, RiCompassDiscoverFill, RiFileLine, RiCloseLine
 import { agents, type AgentKey, type Artifact, type AttachmentPointer, type Message, type Source } from "@/lib/mock-data";
 import type { StoredMessage } from "@/lib/chat-sessions";
 import { ArtifactView } from "./artifact-view";
+import { ArtifactChip } from "./artifact-chip";
 import { StudioView } from "./studio-view";
 
 type ChatMetadata = { agent?: AgentKey; sources?: Source[] };
@@ -126,7 +127,7 @@ function WelcomeView({ name }: { name: string }) {
   );
 }
 
-function AssistantMessage({ message }: { message: Message }) {
+function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpenArtifact: (artifact: Artifact) => void }) {
   const [sourceOpen, setSourceOpen] = useState(false);
   const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
   const agent = agents.find((a) => a.key === message.agent);
@@ -156,7 +157,9 @@ function AssistantMessage({ message }: { message: Message }) {
           {message.content}
         </div>
       )}
-      {message.artifacts?.map((artifact, i) => <ArtifactView key={i} artifact={artifact} />)}
+      {message.artifacts?.map((artifact, i) => (
+        <ArtifactChip key={i} artifact={artifact} onOpen={() => onOpenArtifact(artifact)} />
+      ))}
       <div className="mt-2 flex items-center gap-0.5">
         <button
           className="flex size-7 items-center justify-center rounded-lg text-text-3 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1"
@@ -209,7 +212,7 @@ function AssistantMessage({ message }: { message: Message }) {
   );
 }
 
-function ThreadView({ messages }: { messages: Message[] }) {
+function ThreadView({ messages, onOpenArtifact }: { messages: Message[]; onOpenArtifact: (artifact: Artifact) => void }) {
   return (
     <div className="flex w-full max-w-[720px] flex-col gap-4">
       {messages.map((message, i) =>
@@ -234,7 +237,7 @@ function ThreadView({ messages }: { messages: Message[] }) {
             )}
           </div>
         ) : (
-          <AssistantMessage key={i} message={message} />
+          <AssistantMessage key={i} message={message} onOpenArtifact={onOpenArtifact} />
         )
       )}
     </div>
@@ -273,6 +276,17 @@ export function CenterPanel({
   const router = useRouter();
   const selectedAgent = agents.find((a) => a.key === agentKey)!;
   const sessionId = activeSessionId ?? draftId;
+
+  // Ephemeral UI state — closes whichever artifact was open in the previous
+  // session rather than carrying it over when the user switches chats.
+  // Adjusted during render (React's documented pattern for resetting state
+  // on a prop change) rather than an effect, to avoid a cascading extra render.
+  const [openArtifact, setOpenArtifact] = useState<Artifact | null>(null);
+  const [openArtifactSession, setOpenArtifactSession] = useState(sessionId);
+  if (openArtifactSession !== sessionId) {
+    setOpenArtifactSession(sessionId);
+    setOpenArtifact(null);
+  }
 
   const { messages, sendMessage, status, error } = useChat<ChatMessage>({
     id: sessionId,
@@ -354,6 +368,8 @@ export function CenterPanel({
 
   return (
     <main className="relative flex min-h-0 min-w-0 flex-col bg-surface">
+    <div className="flex min-h-0 flex-1">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex items-center justify-between border-b border-border px-4 py-3.5 min-[861px]:hidden">
         <button
           className="flex rounded-xl p-2 text-text-1 transition-colors duration-150 ease-out hover:bg-surface-hover"
@@ -378,7 +394,11 @@ export function CenterPanel({
         <StudioView />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-8 pb-4 pt-9">
-          {displayMessages.length > 0 ? <ThreadView messages={displayMessages} /> : <WelcomeView name={user.name} />}
+          {displayMessages.length > 0 ? (
+            <ThreadView messages={displayMessages} onOpenArtifact={setOpenArtifact} />
+          ) : (
+            <WelcomeView name={user.name} />
+          )}
         </div>
       )}
 
@@ -487,6 +507,20 @@ export function CenterPanel({
         </div>
       </div>
       )}
+    </div>
+
+    {mainView === "chat" && openArtifact && (
+      <div className="hidden min-h-0 w-[440px] flex-none flex-col border-l border-border min-[861px]:flex">
+        <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
+      </div>
+    )}
+    </div>
+
+    {mainView === "chat" && openArtifact && (
+      <div className="fixed inset-0 z-40 flex flex-col bg-surface min-[861px]:hidden">
+        <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
+      </div>
+    )}
     </main>
   );
 }
