@@ -5,6 +5,8 @@ import ReactMarkdown from "react-markdown";
 import type { Artifact } from "@/lib/mock-data";
 import { IconCopy, IconCheck } from "./icons";
 import { RiCloseLine, RiDownloadLine } from "@remixicon/react";
+import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 // A generated page can set `overflow: hidden` / fixed heights on html/body
 // (e.g. a full-viewport hero) which leaves no way to reach the rest of the
@@ -72,31 +74,31 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
               </button>
             </div>
           )}
-          <button
-            className="flex size-7 items-center justify-center rounded-lg text-text-3 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1"
-            onClick={copy}
-            title="Copy content"
-            aria-label="Copy content"
-          >
-            {copied ? <IconCheck className="size-[14px]" /> : <IconCopy className="size-[14px]" />}
-          </button>
-          <button
-            className="flex size-7 items-center justify-center rounded-lg text-text-3 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1"
-            onClick={download}
-            title="Download"
-            aria-label="Download"
-          >
-            <RiDownloadLine className="size-[15px]" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={copy} aria-label="Copy content">
+                {copied ? <IconCheck className="size-[14px]" /> : <IconCopy className="size-[14px]" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Copy content</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={download} aria-label="Download">
+                <RiDownloadLine className="size-[15px]" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Download</TooltipContent>
+          </Tooltip>
           {onClose && (
-            <button
-              className="flex size-7 items-center justify-center rounded-lg text-text-3 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1"
-              onClick={onClose}
-              title="Close"
-              aria-label="Close"
-            >
-              <RiCloseLine className="size-[16px]" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={onClose} aria-label="Close">
+                  <RiCloseLine className="size-[16px]" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Close</TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>
@@ -115,7 +117,10 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
             className="min-h-0 w-full flex-1 bg-white"
           />
         ) : (
-          <pre className="thin-scroll min-h-0 flex-1 overflow-auto bg-surface-inset px-5 py-4 font-mono text-[12.5px] leading-relaxed text-text-1">
+          // No horizontal scroll inside the artifact — the panel itself
+          // expands (drag its left edge) for long lines instead of a nested
+          // x-scrollbar, so code wraps rather than overflowing sideways.
+          <pre className="thin-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-words bg-surface-inset px-5 py-4 font-mono text-[12.5px] leading-relaxed text-text-1">
             <code>{artifact.content}</code>
           </pre>
         )

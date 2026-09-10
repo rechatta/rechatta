@@ -19,11 +19,17 @@ import {
   IconLink,
 } from "./icons";
 import { RiChat1Line, RiEditFill, RiCompassDiscoverFill, RiFileLine, RiCloseLine, RiLoader4Line } from "@remixicon/react";
-import { agents, type AgentKey, type Artifact, type AttachmentPointer, type Message, type Source } from "@/lib/mock-data";
+import { agents, agentBadgeColors, type AgentKey, type Artifact, type AttachmentPointer, type Message, type Source } from "@/lib/mock-data";
 import type { StoredMessage } from "@/lib/chat-sessions";
 import { ArtifactView } from "./artifact-view";
 import { ArtifactChip } from "./artifact-chip";
 import { StudioView } from "./studio-view";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Card } from "./ui/card";
+import { Spinner } from "./ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 type ChatMetadata = { agent?: AgentKey; sources?: Source[] };
 type ChatMessage = UIMessage<ChatMetadata>;
@@ -111,16 +117,16 @@ function WelcomeView({ name }: { name: string }) {
 
       <div className="mt-7.5 grid w-full max-w-[720px] grid-cols-3 gap-3.5 max-[860px]:grid-cols-1">
         {quickActions.map(({ icon: Icon, title, desc }) => (
-          <button
+          <Card
             key={title}
-            className="rounded-[26px] border border-border bg-surface p-4.5 text-left shadow-card transition hover:-translate-y-0.5 hover:border-border-soft hover:shadow-card-hover"
+            className="gap-0 rounded-[26px] border-border p-4.5 py-0 shadow-card transition hover:-translate-y-0.5 hover:border-border-soft hover:shadow-card-hover"
           >
             <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-surface-inset text-text-1">
               <Icon className="size-[19px]" />
             </div>
             <div className="mb-1 text-[14.5px] font-bold text-text-1">{title}</div>
             <div className="text-[12.8px] leading-snug text-text-2">{desc}</div>
-          </button>
+          </Card>
         ))}
       </div>
     </div>
@@ -128,17 +134,19 @@ function WelcomeView({ name }: { name: string }) {
 }
 
 function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpenArtifact: (artifact: Artifact) => void }) {
-  const [sourceOpen, setSourceOpen] = useState(false);
   const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
   const agent = agents.find((a) => a.key === message.agent);
+  const badgeColors = message.agent && message.agent !== "auto" ? agentBadgeColors[message.agent] : undefined;
 
   return (
     <div className="[animation:fade-in_0.2s_ease-out_both]">
-      {agent && message.agent !== "auto" && (
-        <div className="mb-1.5 flex items-center gap-1.5 text-[11.5px] font-semibold text-text-3">
-          <span className="size-1.5 rounded-full" style={{ background: agent.color }} />
+      {agent && badgeColors && (
+        <Badge
+          className="mb-1.5 rounded-full border-transparent font-semibold"
+          style={{ background: badgeColors.bg, color: badgeColors.fg }}
+        >
           {agent.name} agent
-        </div>
+        </Badge>
       )}
       {message.pendingTool && (
         <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] text-text-3">
@@ -161,51 +169,62 @@ function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpe
         <ArtifactChip key={i} artifact={artifact} onOpen={() => onOpenArtifact(artifact)} />
       ))}
       <div className="mt-2 flex items-center gap-0.5">
-        <button
-          className="flex size-7 items-center justify-center rounded-lg text-text-3 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1"
-          title="Copy response"
-        >
-          <IconCopy className="size-[15px]" />
-        </button>
-        <button
-          className={`flex size-7 items-center justify-center rounded-lg transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1 ${feedback === "up" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
-          title="Good response"
-          onClick={() => setFeedback((f) => (f === "up" ? null : "up"))}
-        >
-          <IconThumbsUp className="size-[15px]" />
-        </button>
-        <button
-          className={`flex size-7 items-center justify-center rounded-lg transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1 ${feedback === "down" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
-          title="Bad response"
-          onClick={() => setFeedback((f) => (f === "down" ? null : "down"))}
-        >
-          <IconThumbsDown className="size-[15px]" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1">
+              <IconCopy className="size-[15px]" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Copy response</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={`size-7 rounded-lg hover:text-text-1 ${feedback === "up" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
+              onClick={() => setFeedback((f) => (f === "up" ? null : "up"))}
+            >
+              <IconThumbsUp className="size-[15px]" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Good response</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={`size-7 rounded-lg hover:text-text-1 ${feedback === "down" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
+              onClick={() => setFeedback((f) => (f === "down" ? null : "down"))}
+            >
+              <IconThumbsDown className="size-[15px]" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Bad response</TooltipContent>
+        </Tooltip>
         <span className="flex-1" />
         {agent && message.sources && (
-          <div className="relative">
-            <button
-              className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 pl-2 text-[11.5px] font-semibold text-text-2 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1"
-              onClick={() => setSourceOpen((v) => !v)}
-            >
-              {message.sources.length} sources
-              <IconChevron className="size-[15px]" />
-            </button>
-            {sourceOpen && (
-              <div className="absolute bottom-[34px] right-0 z-40 flex w-[270px] flex-col gap-0.5 rounded-xl border border-border bg-surface p-2.5 shadow-card-hover">
-                <div className="px-1 pb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-text-3">Tools used</div>
-                {message.sources.map((source) => {
-                  const Icon = source.icon === "link" ? IconLink : IconWrench;
-                  return (
-                    <div key={source.label} className="flex items-start gap-2 px-1 py-1.5 text-[12.2px] leading-snug text-text-2">
-                      <Icon className="mt-px size-[15px] flex-none text-text-3" />
-                      {source.label}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 pl-2 text-[11.5px] font-semibold text-text-2 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1">
+                {message.sources.length} sources
+                <IconChevron className="size-[15px]" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="end" className="w-[270px] rounded-xl p-2.5">
+              <div className="px-1 pb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-text-3">Tools used</div>
+              {message.sources.map((source) => {
+                const Icon = source.icon === "link" ? IconLink : IconWrench;
+                return (
+                  <div key={source.label} className="flex items-start gap-2 px-1 py-1.5 text-[12.2px] leading-snug text-text-2">
+                    <Icon className="mt-px size-[15px] flex-none text-text-3" />
+                    {source.label}
+                  </div>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </div>
@@ -398,23 +417,13 @@ export function CenterPanel({
     <div className="flex min-h-0 flex-1">
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex items-center justify-between border-b border-border px-4 py-3.5 min-[861px]:hidden">
-        <button
-          className="flex rounded-xl p-2 text-text-1 transition-colors duration-150 ease-out hover:bg-surface-hover"
-          onClick={onToggleSidebar}
-          aria-label="Open navigation"
-          title="Open navigation"
-        >
+        <Button variant="ghost" size="icon" className="text-text-1" onClick={onToggleSidebar} aria-label="Open navigation">
           <IconMenu className="size-[18px]" />
-        </button>
+        </Button>
         <span className="font-heading text-sm font-bold">Rechatta</span>
-        <button
-          className="flex rounded-xl p-2 text-text-1 transition-colors duration-150 ease-out hover:bg-surface-hover"
-          onClick={onNewChat}
-          aria-label="Start new chat"
-          title="Start new chat"
-        >
+        <Button variant="ghost" size="icon" className="text-text-1" onClick={onNewChat} aria-label="Start new chat">
           <RiChat1Line className="size-[18px]" />
-        </button>
+        </Button>
       </div>
 
       {mainView === "studio" ? (
@@ -470,66 +479,73 @@ export function CenterPanel({
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFilesSelected} />
-            <button
-              className="flex size-8.5 flex-none items-center justify-center rounded-full bg-surface-inset text-text-2 transition-colors duration-150 ease-out active:scale-[.96] hover:bg-surface-hover hover:text-text-1 disabled:opacity-40"
-              aria-label="Attach file"
-              title="Attach file"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {uploading ? <RiLoader4Line className="size-[16px] animate-spin" /> : <IconClip className="size-[16px]" />}
-            </button>
-            <div className="relative">
-              <button className="pill-btn" onClick={() => setAgentMenuOpen((v) => !v)}>
-                <span className="size-2.5 flex-none rounded-full" style={{ background: selectedAgent.color }} />
-                {selectedAgent.name}
-                <IconChevron className="size-[15px]" />
-              </button>
-              {agentMenuOpen && (
-                <div className="agent-menu-panel absolute bottom-[38px] left-0 z-40">
-                  {agents.map((a) => (
-                    <button
-                      key={a.key}
-                      className="agent-opt"
-                      onClick={() => {
-                        setAgentKey(a.key);
-                        setAgentMenuOpen(false);
-                      }}
-                    >
-                      <span className="size-2.5 flex-none rounded-full" style={{ background: a.color }} />
-                      <span>
-                        {a.name}
-                        <span className="block text-[11px] font-normal text-text-3">{a.description}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              className="flex size-8.5 flex-none items-center justify-center rounded-full bg-surface-inset text-text-2 transition-colors duration-150 ease-out active:scale-[.96] hover:bg-surface-hover hover:text-text-1"
-              aria-label="Options"
-              title="Options"
-            >
-              <IconSliders className="size-[16px]" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="size-8.5 flex-none rounded-full text-text-2 hover:text-text-1"
+                  aria-label="Attach file"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? <RiLoader4Line className="size-[16px] animate-spin" /> : <IconClip className="size-[16px]" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Attach file</TooltipContent>
+            </Tooltip>
+            <DropdownMenu open={agentMenuOpen} onOpenChange={setAgentMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <button className="pill-btn">
+                  <span className="size-2.5 flex-none rounded-full" style={{ background: selectedAgent.color }} />
+                  {selectedAgent.name}
+                  <IconChevron className="size-[15px]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-[190px] rounded-xl p-1.5">
+                {agents.map((a) => (
+                  <DropdownMenuItem key={a.key} className="items-start py-2 font-semibold" onClick={() => setAgentKey(a.key)}>
+                    <span className="mt-1 size-2.5 flex-none rounded-full" style={{ background: a.color }} />
+                    <span>
+                      {a.name}
+                      <span className="block text-[11px] font-normal text-text-3">{a.description}</span>
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="secondary" size="icon" className="size-8.5 flex-none rounded-full text-text-2 hover:text-text-1" aria-label="Options">
+                  <IconSliders className="size-[16px]" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Options</TooltipContent>
+            </Tooltip>
             <div className="flex-1" />
-            <button
-              className="flex size-8.5 items-center justify-center rounded-full bg-surface-inset text-text-2 transition-colors duration-150 ease-out active:scale-[.96] hover:bg-surface-hover hover:text-text-1"
-              aria-label="Voice input"
-              title="Voice input"
-            >
-              <IconMic className="size-[18px]" />
-            </button>
-            <button
-              className="orb size-8.5 disabled:opacity-40"
-              aria-label="Send message"
-              title="Send message"
-              onClick={submit}
-              disabled={isBusy || uploading || (!value.trim() && attachments.length === 0)}
-            >
-              <IconArrowUp className="size-[18px]" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="secondary" size="icon" className="size-8.5 rounded-full text-text-2 hover:text-text-1" aria-label="Voice input">
+                  <IconMic className="size-[18px]" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Voice input</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="orb size-8.5 hover:bg-transparent disabled:opacity-40"
+                  aria-label="Send message"
+                  onClick={submit}
+                  disabled={isBusy || uploading || (!value.trim() && attachments.length === 0)}
+                >
+                  {isBusy ? <Spinner className="size-[16px]" /> : <IconArrowUp className="size-[18px]" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Send message</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>

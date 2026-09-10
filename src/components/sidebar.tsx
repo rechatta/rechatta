@@ -17,6 +17,15 @@ import {
 } from "@remixicon/react";
 import { IconSparkle } from "./icons";
 import { Button } from "./ui/button";
+import { Avatar, AvatarFallback, AvatarBadge } from "./ui/avatar";
+import { Skeleton } from "./ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { signOut } from "@/app/auth/actions";
 import type { AuthUser } from "@/lib/auth-user";
 import type { ChatSessionSummary } from "@/lib/chat-sessions";
@@ -38,6 +47,7 @@ export function Sidebar({
   activeSessionId,
   onSelectSession,
   sessions,
+  sessionsLoaded,
   onToggleFavorite,
   onDeleteSession,
   user,
@@ -53,14 +63,12 @@ export function Sidebar({
   activeSessionId: string | null;
   onSelectSession: (id: string) => void;
   sessions: ChatSessionSummary[];
+  sessionsLoaded: boolean;
   onToggleFavorite: (id: string, favorite: boolean) => void;
   onDeleteSession: (id: string) => void;
   user: AuthUser;
 }) {
   const [active, setActive] = useState("");
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
 
   // Collapsed-only classes are gated to min-[861px]: so a persisted desktop
   // collapse never shrinks the mobile overlay drawer, which always renders
@@ -92,16 +100,20 @@ export function Sidebar({
         <span className={`font-heading text-[16.5px] font-bold tracking-tight text-text-1 ${labelBase} ${label}`}>
           Rechatta
         </span>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={`ml-auto flex-none text-text-3 hover:text-text-1 ${collapsed ? "min-[861px]:ml-0" : ""}`}
-          onClick={onToggleCollapse}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <RiSideBarLine className="size-[16px]" />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={`ml-auto flex-none text-text-3 hover:text-text-1 ${collapsed ? "min-[861px]:ml-0" : ""}`}
+              onClick={onToggleCollapse}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <RiSideBarLine className="size-[16px]" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{collapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
+        </Tooltip>
       </div>
 
       <div className={`flex flex-col gap-1 ${pad}`}>
@@ -171,13 +183,6 @@ export function Sidebar({
                         key={session.id}
                         session={session}
                         isActive={session.id === activeSessionId}
-                        menuOpen={openMenuId === session.id}
-                        menuPos={menuPos}
-                        onOpenMenu={(rect) => {
-                          setOpenMenuId(session.id);
-                          setMenuPos({ bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right });
-                        }}
-                        onCloseMenu={() => setOpenMenuId(null)}
                         onSelect={() => {
                           onSelectSession(session.id);
                           onNavigate();
@@ -192,7 +197,11 @@ export function Sidebar({
 
             <div className="px-3 py-1.5 pt-3.5 text-[11px] font-bold uppercase tracking-wider text-text-3">Chats</div>
             <div className="flex flex-col gap-0.5">
-              {sessions.length === 0 && <p className="px-3 py-2 text-[12px] text-text-3">No chats yet</p>}
+              {!sessionsLoaded &&
+                [0, 1, 2].map((i) => <Skeleton key={i} className="mx-3 my-1 h-[30px] rounded-lg" />)}
+              {sessionsLoaded && sessions.length === 0 && (
+                <p className="px-3 py-2 text-[12px] text-text-3">No chats yet</p>
+              )}
               {sessions
                 .filter((s) => !s.favorite)
                 .map((session) => (
@@ -200,13 +209,6 @@ export function Sidebar({
                     key={session.id}
                     session={session}
                     isActive={session.id === activeSessionId}
-                    menuOpen={openMenuId === session.id}
-                    menuPos={menuPos}
-                    onOpenMenu={(rect) => {
-                      setOpenMenuId(session.id);
-                      setMenuPos({ bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right });
-                    }}
-                    onCloseMenu={() => setOpenMenuId(null)}
                     onSelect={() => {
                       onSelectSession(session.id);
                       onNavigate();
@@ -224,34 +226,32 @@ export function Sidebar({
         <div
           className={`mt-2.5 flex flex-col gap-2.5 rounded-2xl bg-surface-inset p-2.5 ${collapsed ? "min-[861px]:items-center min-[861px]:bg-transparent min-[861px]:p-0" : ""}`}
         >
-          <div className="relative">
-            <button
-              className="flex w-full items-center gap-2.5 rounded-xl p-1 text-left transition-colors duration-150 ease-out hover:bg-surface-hover"
-              onClick={() => setAccountMenuOpen((v) => !v)}
-            >
-              <div className="relative flex size-8 flex-none items-center justify-center rounded-full bg-linear-to-br from-sparkle-a to-sparkle-b text-[12.5px] font-bold text-white">
-                {user.initials}
-                <span className="absolute -bottom-px -right-px size-2 rounded-full border-2 border-surface-inset bg-[#2fb463]" />
-              </div>
-              <span className={`min-w-0 flex-1 truncate text-[13px] font-semibold text-text-1 ${labelBase} ${label}`}>
-                {user.name}
-              </span>
-            </button>
-            {accountMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setAccountMenuOpen(false)} />
-                <div className="absolute bottom-[calc(100%+6px)] left-0 z-50 flex w-[220px] flex-col gap-0.5 rounded-xl border border-border bg-surface p-1.5 shadow-card-hover [animation:pop-in_0.15s_ease-out_both]">
-                  <div className="truncate px-2.5 py-2 text-[12px] text-text-3">{user.email}</div>
-                  <form action={signOut}>
-                    <button type="submit" className="agent-opt w-full font-medium">
-                      <RiLogoutBoxRLine className="size-[15px] flex-none" />
-                      Sign out
-                    </button>
-                  </form>
-                </div>
-              </>
-            )}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex w-full items-center gap-2.5 rounded-xl p-1 text-left transition-colors duration-150 ease-out hover:bg-surface-hover">
+                <Avatar className="flex-none bg-linear-to-br from-sparkle-a to-sparkle-b text-[12.5px] font-bold text-white">
+                  <AvatarFallback className="bg-transparent text-[12.5px] font-bold text-white">
+                    {user.initials}
+                  </AvatarFallback>
+                  <AvatarBadge className="bg-[#2fb463] ring-surface-inset" />
+                </Avatar>
+                <span className={`min-w-0 flex-1 truncate text-[13px] font-semibold text-text-1 ${labelBase} ${label}`}>
+                  {user.name}
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-[220px] rounded-xl p-1.5">
+              <div className="truncate px-2.5 py-2 text-[12px] text-text-3">{user.email}</div>
+              <form action={signOut} className="w-full">
+                <DropdownMenuItem asChild>
+                  <button type="submit" className="w-full font-medium">
+                    <RiLogoutBoxRLine className="size-[15px] flex-none" />
+                    Sign out
+                  </button>
+                </DropdownMenuItem>
+              </form>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button className={`cta-pill ${hideBlock}`}>
             <span className="cta-orb orb size-6">
               <IconSparkle className="size-[15px]" />
@@ -267,24 +267,18 @@ export function Sidebar({
 function ChatRow({
   session,
   isActive,
-  menuOpen,
-  menuPos,
-  onOpenMenu,
-  onCloseMenu,
   onSelect,
   onToggleFavorite,
   onDelete,
 }: {
   session: ChatSessionSummary;
   isActive: boolean;
-  menuOpen: boolean;
-  menuPos: { bottom: number; right: number } | null;
-  onOpenMenu: (rect: DOMRect) => void;
-  onCloseMenu: () => void;
   onSelect: () => void;
   onToggleFavorite: (id: string, favorite: boolean) => void;
   onDelete: (id: string) => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div
       className={`group relative flex w-full items-center gap-1 rounded-xl px-3 py-2 transition-colors duration-150 ease-out hover:bg-surface-hover ${isActive ? "bg-surface-inset" : ""}`}
@@ -293,52 +287,33 @@ function ChatRow({
         <span className="block truncate text-[12.8px] font-medium text-text-1">{session.title}</span>
       </button>
       <span className="flex-none font-mono text-[10.5px] text-text-3 group-hover:hidden">{session.time}</span>
-      <button
-        className={`size-6 flex-none items-center justify-center rounded-md text-text-3 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1 ${menuOpen ? "flex" : "hidden group-hover:flex"}`}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (menuOpen) onCloseMenu();
-          else onOpenMenu(e.currentTarget.getBoundingClientRect());
-        }}
-        aria-label="Chat options"
-        title="Chat options"
-      >
-        <RiMore2Fill className="size-[14px]" />
-      </button>
-      {menuOpen && menuPos && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={onCloseMenu} />
-          <div
-            className="fixed z-50 flex w-[180px] flex-col gap-0.5 rounded-xl border border-border bg-surface p-1.5 shadow-card-hover [animation:pop-in_0.15s_ease-out_both]"
-            style={{ bottom: menuPos.bottom, right: menuPos.right }}
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className={`text-text-3 hover:text-text-1 ${menuOpen ? "flex" : "hidden group-hover:flex"}`}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Chat options"
           >
-            <button
-              className="agent-opt"
-              onClick={() => {
-                onToggleFavorite(session.id, !session.favorite);
-                onCloseMenu();
-              }}
-            >
-              {session.favorite ? (
-                <RiStarFill className="size-[15px] flex-none text-sparkle-b" />
-              ) : (
-                <RiStarLine className="size-[15px] flex-none" />
-              )}
-              {session.favorite ? "Remove favorite" : "Add to favorites"}
-            </button>
-            <button
-              className="agent-opt text-red-500"
-              onClick={() => {
-                onDelete(session.id);
-                onCloseMenu();
-              }}
-            >
-              <RiDeleteBin6Line className="size-[15px] flex-none" />
-              Delete
-            </button>
-          </div>
-        </>
-      )}
+            <RiMore2Fill className="size-[14px]" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="bottom" align="end" className="w-[180px] rounded-xl p-1.5">
+          <DropdownMenuItem onClick={() => onToggleFavorite(session.id, !session.favorite)}>
+            {session.favorite ? (
+              <RiStarFill className="size-[15px] flex-none text-sparkle-b" />
+            ) : (
+              <RiStarLine className="size-[15px] flex-none" />
+            )}
+            {session.favorite ? "Remove favorite" : "Add to favorites"}
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={() => onDelete(session.id)}>
+            <RiDeleteBin6Line className="size-[15px] flex-none" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

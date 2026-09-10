@@ -39,6 +39,7 @@ export function AppShell({ user }: { user: AuthUser }) {
   // there's no separate "create session" round trip.
   const [draftId, setDraftId] = useState(() => crypto.randomUUID());
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
   const [sessionMessages, setSessionMessages] = useState<StoredMessage[]>([]);
   const [mainView, setMainView] = useState<MainView>("chat");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -46,6 +47,7 @@ export function AppShell({ user }: { user: AuthUser }) {
   const refreshSessions = useCallback(async () => {
     const res = await fetch("/api/sessions");
     if (res.ok) setSessions(await res.json());
+    setSessionsLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -138,6 +140,7 @@ export function AppShell({ user }: { user: AuthUser }) {
           activeSessionId={activeSessionId}
           onSelectSession={selectSession}
           sessions={sessions}
+          sessionsLoaded={sessionsLoaded}
           onToggleFavorite={toggleFavorite}
           onDeleteSession={deleteSession}
           user={user}
