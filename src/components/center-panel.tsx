@@ -18,8 +18,8 @@ import {
   IconWrench,
   IconLink,
 } from "./icons";
-import { RiChat1Line, RiEditFill, RiCompassDiscoverFill } from "@remixicon/react";
-import { agents, type AgentKey, type Artifact, type Message, type Source } from "@/lib/mock-data";
+import { RiChat1Line, RiEditFill, RiCompassDiscoverFill, RiFileLine, RiCloseLine, RiLoader4Line } from "@remixicon/react";
+import { agents, type AgentKey, type Artifact, type AttachmentPointer, type Message, type Source } from "@/lib/mock-data";
 import type { StoredMessage } from "@/lib/chat-sessions";
 import { ArtifactView } from "./artifact-view";
 import { StudioView } from "./studio-view";
@@ -27,6 +27,14 @@ import { StudioView } from "./studio-view";
 type ChatMetadata = { agent?: AgentKey; sources?: Source[] };
 type ChatMessage = UIMessage<ChatMetadata>;
 type ToolPart = { type: string; state?: string; output?: unknown };
+type FilePartData = { type: string; filename?: string; mediaType?: string; path?: string; size?: number };
+type PointerFilePart = { type: "file"; filename: string; mediaType: string; url: string; path: string; size: number };
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 // Re-hydrates messages loaded from the database into the shape useChat
 // expects, including synthesizing a tool-output part for any saved artifact
@@ -40,8 +48,17 @@ function toSeedChatMessages(stored: StoredMessage[], sessionId: string): ChatMes
         type: "tool-createArtifact",
         toolCallId: `${sessionId}-${i}-${j}`,
         state: "output-available",
+        // convertToModelMessages requires input on an output-available tool
+        // part to reconstruct a valid tool_calls entry — the createArtifact
+        // inputSchema is exactly {kind, title, content}, i.e. the artifact itself.
+        input: artifact,
         output: artifact,
       });
+    });
+    // url is unused (files are never re-fetched from the client) — path is
+    // what route.ts's withFilePointers reads to rebuild the model-visible pointer.
+    m.files?.forEach((f) => {
+      parts.push({ type: "file", filename: f.name, mediaType: f.mediaType, url: "", path: f.path, size: f.size });
     });
     return {
       id: `${sessionId}-${i}`,
@@ -59,6 +76,9 @@ function toDisplayMessages(messages: ChatMessage[], fallbackAgent: AgentKey): Me
       .filter((p) => p.type === "tool-createArtifact" && p.state === "output-available")
       .map((p) => p.output as Artifact);
     const pending = toolParts.find((p) => p.state !== "output-available");
+    const files = (m.parts as FilePartData[])
+      .filter((p) => p.type === "file" && p.path)
+      .map((p) => ({ name: p.filename ?? "file", mediaType: p.mediaType ?? "application/octet-stream", size: p.size ?? 0, path: p.path! }));
 
     return {
       role: m.role === "user" ? "user" : "assistant",
@@ -70,6 +90,7 @@ function toDisplayMessages(messages: ChatMessage[], fallbackAgent: AgentKey): Me
       sources: m.metadata?.sources,
       artifacts: artifacts.length > 0 ? artifacts : undefined,
       pendingTool: pending?.type.replace(/^tool-/, ""),
+      files: files.length > 0 ? files : undefined,
     };
   });
 }
@@ -187,8 +208,24 @@ function ThreadView({ messages }: { messages: Message[] }) {
     <div className="flex w-full max-w-[720px] flex-col gap-4">
       {messages.map((message, i) =>
         message.role === "user" ? (
-          <div key={i} className="flex justify-end [animation:fade-in_0.2s_ease-out_both]">
-            <div className="max-w-[80%] rounded-2xl rounded-br-md bg-surface-inset px-3.5 py-2.5 text-[13.8px]">{message.content}</div>
+          <div key={i} className="flex flex-col items-end gap-1.5 [animation:fade-in_0.2s_ease-out_both]">
+            {message.files && message.files.length > 0 && (
+              <div className="flex max-w-[80%] flex-wrap justify-end gap-1.5">
+                {message.files.map((f, j) => (
+                  <div
+                    key={j}
+                    className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[12px] text-text-2"
+                  >
+                    <RiFileLine className="size-[14px] flex-none text-text-3" />
+                    <span className="max-w-[160px] truncate font-medium text-text-1">{f.name}</span>
+                    <span className="text-text-3">{formatFileSize(f.size)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {message.content && (
+              <div className="max-w-[80%] rounded-2xl rounded-br-md bg-surface-inset px-3.5 py-2.5 text-[13.8px]">{message.content}</div>
+            )}
           </div>
         ) : (
           <AssistantMessage key={i} message={message} />
@@ -222,7 +259,10 @@ export function CenterPanel({
   const [agentKey, setAgentKey] = useState<AgentKey>("auto");
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
   const [value, setValue] = useState("");
+  const [attachments, setAttachments] = useState<AttachmentPointer[]>([]);
+  const [uploading, setUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const router = useRouter();
   const selectedAgent = agents.find((a) => a.key === agentKey)!;
@@ -249,12 +289,53 @@ export function CenterPanel({
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
   }
 
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      const uploaded = await Promise.all(
+        files.map(async (file) => {
+          const form = new FormData();
+          form.append("file", file);
+          form.append("sessionId", sessionId);
+          const res = await fetch("/api/attachments", { method: "POST", body: form });
+          if (!res.ok) return null;
+          return (await res.json()) as AttachmentPointer;
+        })
+      );
+      setAttachments((prev) => [...prev, ...uploaded.filter((p): p is AttachmentPointer => p !== null)]);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removeAttachment(path: string) {
+    setAttachments((prev) => prev.filter((a) => a.path !== path));
+    fetch("/api/attachments", { method: "DELETE", body: JSON.stringify({ path }) }).catch(() => {});
+  }
+
   function submit() {
     const text = value.trim();
-    if (!text || isBusy) return;
+    if ((!text && attachments.length === 0) || isBusy || uploading) return;
     if (!activeSessionId) onSessionStart(draftId);
-    sendMessage({ text });
+    // url is a placeholder — route.ts strips file parts before the model
+    // ever sees them and reconstructs a path-based pointer instead.
+    const files: PointerFilePart[] = attachments.map((a) => ({
+      type: "file",
+      filename: a.name,
+      mediaType: a.mediaType,
+      url: "",
+      path: a.path,
+      size: a.size,
+    }));
+    sendMessage(
+      { text, files: files.length > 0 ? files : undefined },
+      attachments.length > 0 ? { body: { attachments } } : undefined
+    );
     setValue("");
+    setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   }
 
@@ -301,6 +382,27 @@ export function CenterPanel({
           <p className="mx-auto mb-2 max-w-[720px] text-center text-[12.5px] text-red-500">{error.message}</p>
         )}
         <div className="mx-auto max-w-[720px] rounded-[22px] border border-border bg-surface px-3.5 pb-2.5 pt-3 shadow-card">
+          {attachments.length > 0 && (
+            <div className="mb-2.5 flex flex-wrap gap-1.5">
+              {attachments.map((a) => (
+                <div
+                  key={a.path}
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-inset px-2.5 py-1.5 text-[12px] text-text-2"
+                >
+                  <RiFileLine className="size-[14px] flex-none text-text-3" />
+                  <span className="max-w-[160px] truncate font-medium text-text-1">{a.name}</span>
+                  <span className="text-text-3">{formatFileSize(a.size)}</span>
+                  <button
+                    className="flex size-4 flex-none items-center justify-center rounded-full text-text-3 hover:bg-surface-hover hover:text-text-1"
+                    onClick={() => removeAttachment(a.path)}
+                    aria-label={`Remove ${a.name}`}
+                  >
+                    <RiCloseLine className="size-[13px]" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex items-start gap-2.5">
             <IconSparkle className="mt-0.5 size-[18px] flex-none text-sparkle-a" />
             <textarea
@@ -314,12 +416,15 @@ export function CenterPanel({
             />
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFilesSelected} />
             <button
-              className="flex size-8.5 flex-none items-center justify-center rounded-full bg-surface-inset text-text-2 transition-colors duration-150 ease-out active:scale-[.96] hover:bg-surface-hover hover:text-text-1"
+              className="flex size-8.5 flex-none items-center justify-center rounded-full bg-surface-inset text-text-2 transition-colors duration-150 ease-out active:scale-[.96] hover:bg-surface-hover hover:text-text-1 disabled:opacity-40"
               aria-label="Attach file"
               title="Attach file"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
             >
-              <IconClip className="size-[16px]" />
+              {uploading ? <RiLoader4Line className="size-[16px] animate-spin" /> : <IconClip className="size-[16px]" />}
             </button>
             <div className="relative">
               <button className="pill-btn" onClick={() => setAgentMenuOpen((v) => !v)}>
@@ -368,7 +473,7 @@ export function CenterPanel({
               aria-label="Send message"
               title="Send message"
               onClick={submit}
-              disabled={isBusy || !value.trim()}
+              disabled={isBusy || uploading || (!value.trim() && attachments.length === 0)}
             >
               <IconArrowUp className="size-[18px]" />
             </button>

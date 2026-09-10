@@ -13,7 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   // foreign session id just yields an empty array here, not another user's data.
   const { data, error } = await supabase
     .from("chat_messages")
-    .select("role, content, agent, artifacts")
+    .select("role, content, agent, artifacts, files")
     .eq("session_id", id)
     .order("created_at", { ascending: true });
 
@@ -24,6 +24,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     content: m.content,
     agent: m.agent ?? undefined,
     artifacts: m.artifacts ?? undefined,
+    files: m.files ?? undefined,
   }));
 
   return Response.json(messages);

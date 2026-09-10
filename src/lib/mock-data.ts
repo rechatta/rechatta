@@ -43,6 +43,10 @@ export type Source = { icon: "wrench" | "link"; label: string };
 export type ArtifactKind = "markdown";
 export type Artifact = { kind: ArtifactKind; title: string; content: string };
 
+// path is the permanent Supabase Storage object path ("{user_id}/{session_id}/...") —
+// this is what runCode re-fetches a file by on a later turn, not the filename.
+export type AttachmentPointer = { name: string; mediaType: string; size: number; path: string };
+
 export type Message = {
   role: "user" | "assistant";
   content: string;
@@ -50,6 +54,6 @@ export type Message = {
   sources?: Source[];
   artifacts?: Artifact[];
   pendingTool?: string;
-  files?: { name: string; mediaType: string }[];
+  files?: AttachmentPointer[];
 };
 

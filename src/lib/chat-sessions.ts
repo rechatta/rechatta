@@ -1,4 +1,4 @@
-import type { AgentKey, Artifact } from "@/lib/mock-data";
+import type { AgentKey, Artifact, AttachmentPointer } from "@/lib/mock-data";
 
 export type ChatSessionSummary = {
   id: string;
@@ -12,6 +12,7 @@ export type StoredMessage = {
   content: string;
   agent?: AgentKey;
   artifacts?: Artifact[];
+  files?: AttachmentPointer[];
 };
 
 export function relativeTime(iso: string): string {

@@ -2,7 +2,7 @@ import { convertToModelMessages, isStepCount, streamText, type ToolSet, type UIM
 import { chatModel } from "@/lib/ai/provider";
 import { webSearch } from "@/lib/ai/tools/web-search";
 import { createArtifact } from "@/lib/ai/tools/create-artifact";
-import { agentSystemPrompts, agentTools, type AgentKey, type Artifact } from "@/lib/mock-data";
+import { agentSystemPrompts, agentTools, type AgentKey, type Artifact, type AttachmentPointer } from "@/lib/mock-data";
 import { titleFromMessage } from "@/lib/chat-sessions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,6 +26,24 @@ function latestUserText(messages: UIMessage[]): string {
     .join("");
 }
 
+type FilePart = { type: "file"; filename?: string; path?: string };
+
+// File parts never reach the model — attachments are read via the runCode
+// tool by path, not by attaching raw bytes to the prompt. Every turn's file
+// parts (current and historical) collapse to a one-line pointer so the model
+// knows the file exists and can pass its path to runCode.
+function withFilePointers(messages: UIMessage[]): UIMessage[] {
+  return messages.map((m) => {
+    const fileParts = (m.parts as FilePart[]).filter((p) => p.type === "file");
+    if (fileParts.length === 0) return m;
+    const pointerText = fileParts
+      .map((p) => `[Attached file: ${p.filename ?? "file"} (path: ${p.path ?? "unknown"})]`)
+      .join("\n");
+    const otherParts = m.parts.filter((p) => p.type !== "file");
+    return { ...m, parts: [...otherParts, { type: "text", text: pointerText }] } as UIMessage;
+  });
+}
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const {
@@ -33,7 +51,12 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const { messages, agentKey, sessionId }: { messages: UIMessage[]; agentKey?: AgentKey; sessionId: string } =
+  const {
+    messages,
+    agentKey,
+    sessionId,
+    attachments,
+  }: { messages: UIMessage[]; agentKey?: AgentKey; sessionId: string; attachments?: AttachmentPointer[] } =
     await req.json();
   const key = agentKey ?? "auto";
 
@@ -56,13 +79,18 @@ export async function POST(req: Request) {
   await supabase.from("chat_sessions").update({ updated_at: new Date().toISOString() }).eq("id", sessionId);
 
   if (userText) {
-    await supabase.from("chat_messages").insert({ session_id: sessionId, role: "user", content: userText });
+    await supabase.from("chat_messages").insert({
+      session_id: sessionId,
+      role: "user",
+      content: userText,
+      files: attachments && attachments.length > 0 ? attachments : null,
+    });
   }
 
   const result = streamText({
     model: chatModel,
     system: agentSystemPrompts[key],
-    messages: await convertToModelMessages(messages),
+    messages: await convertToModelMessages(withFilePointers(messages)),
     tools,
     stopWhen: isStepCount(6),
     onEnd: async (event) => {
