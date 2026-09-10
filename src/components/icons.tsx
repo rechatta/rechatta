@@ -16,111 +16,6 @@ export function IconSparkle({ className }: IconProps) {
   );
 }
 
-export function IconHome({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <path d="M4 11 12 4l8 7" />
-      <path d="M6 10v9h5v-5h2v5h5v-9" />
-    </svg>
-  );
-}
-
-export function IconLayers({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <polygon points="12,3 21,8 12,13 3,8" />
-      <polyline points="3,12 12,17 21,12" />
-      <polyline points="3,16 12,21 21,16" />
-    </svg>
-  );
-}
-
-export function IconStack({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <rect x="4" y="4" width="16" height="6.5" rx="2" />
-      <rect x="4" y="13.5" width="16" height="6.5" rx="2" />
-    </svg>
-  );
-}
-
-export function IconLibrary({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <rect x="3.5" y="4" width="6" height="16" rx="1.2" />
-      <rect x="10.5" y="4" width="4" height="16" rx="1.2" />
-      <rect x="16" y="6" width="4.5" height="14" rx="1.2" />
-    </svg>
-  );
-}
-
-export function IconDatabase({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <ellipse cx="12" cy="5" rx="7" ry="2.5" />
-      <path d="M5 5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V5" />
-      <path d="M5 11v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6" />
-    </svg>
-  );
-}
-
-export function IconBarChart({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <line x1="4" y1="20" x2="20" y2="20" />
-      <rect x="6" y="13" width="3" height="7" />
-      <rect x="10.5" y="8" width="3" height="12" />
-      <rect x="15" y="4" width="3" height="16" />
-    </svg>
-  );
-}
-
-export function IconBell({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" />
-      <path d="M10 20a2 2 0 0 0 4 0" />
-    </svg>
-  );
-}
-
-export function IconGear({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-      <circle cx="12" cy="12" r="3" />
-      <line x1="12" y1="2" x2="12" y2="5" />
-      <line x1="12" y1="19" x2="12" y2="22" />
-      <line x1="2" y1="12" x2="5" y2="12" />
-      <line x1="19" y1="12" x2="22" y2="12" />
-      <line x1="4.9" y1="4.9" x2="7" y2="7" />
-      <line x1="17" y1="17" x2="19.1" y2="19.1" />
-      <line x1="4.9" y1="19.1" x2="7" y2="17" />
-      <line x1="17" y1="7" x2="19.1" y2="4.9" />
-    </svg>
-  );
-}
-
-export function IconBot({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <rect x="5" y="8.5" width="14" height="10" rx="3" />
-      <circle cx="9.2" cy="13.5" r="1.3" fill="currentColor" stroke="none" />
-      <circle cx="14.8" cy="13.5" r="1.3" fill="currentColor" stroke="none" />
-      <line x1="12" y1="8.5" x2="12" y2="4.5" />
-      <circle cx="12" cy="3.3" r="1.1" />
-    </svg>
-  );
-}
-
-export function IconWand({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <line x1="4.5" y1="19.5" x2="14" y2="10" />
-      <path d="M17.5 3.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" />
-    </svg>
-  );
-}
-
 export function IconPencil({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" {...base}>
@@ -135,53 +30,6 @@ export function IconCompass({ className }: IconProps) {
     <svg className={className} viewBox="0 0 24 24" {...base}>
       <circle cx="12" cy="12" r="9" />
       <polygon points="15,9 13,13 9,15 11,11" />
-    </svg>
-  );
-}
-
-export function IconSearch({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-      <circle cx="11" cy="11" r="6.5" />
-      <line x1="16" y1="16" x2="21" y2="21" />
-    </svg>
-  );
-}
-
-export function IconPlus({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
-export function IconArchive({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <rect x="3" y="4" width="18" height="4" rx="1" />
-      <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" />
-      <line x1="10" y1="13" x2="14" y2="13" />
-    </svg>
-  );
-}
-
-export function IconTrash({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <line x1="4" y1="7" x2="20" y2="7" />
-      <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
-      <path d="M9 7V4h6v3" />
-    </svg>
-  );
-}
-
-export function IconX({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round">
-      <line x1="6" y1="6" x2="18" y2="18" />
-      <line x1="18" y1="6" x2="6" y2="18" />
     </svg>
   );
 }
@@ -208,15 +56,6 @@ export function IconMenu({ className }: IconProps) {
       <line x1="4" y1="7" x2="20" y2="7" />
       <line x1="4" y1="12" x2="20" y2="12" />
       <line x1="4" y1="17" x2="20" y2="17" />
-    </svg>
-  );
-}
-
-export function IconColumns({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" {...base}>
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <line x1="15" y1="4" x2="15" y2="20" />
     </svg>
   );
 }

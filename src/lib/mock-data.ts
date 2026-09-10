@@ -15,75 +15,41 @@ export const agentBadgeColors: Record<Exclude<AgentKey, "auto">, { fg: string; b
   data: { fg: "var(--agent-data)", bg: "var(--agent-data-bg)" },
 };
 
+const artifactGuidance =
+  "When your answer is a document rather than a quick reply (a written draft, a summary, a report, a study guide), call createArtifact with kind \"markdown\" instead of writing it inline — keep your chat reply to one short sentence and let the artifact hold the long-form content. The artifact is already rendered for the user right below your reply, so never write a download link, a file path, or any \"sandbox:\" reference in your chat text — just say something like \"Here's the draft.\"";
+
 export const agentSystemPrompts: Record<AgentKey, string> = {
-  auto: "You are Rechatta, a helpful AI assistant. Answer clearly and concisely.",
-  research: "You are Rechatta's Research agent. Help the user analyze topics, compare sources, and reason through open-ended questions. Be thorough but concise.",
-  code: "You are Rechatta's Code agent. Help the user write, debug, and review code. Prefer showing working code over long explanations.",
-  writing: "You are Rechatta's Writing agent. Help the user draft, edit, and refine written content. Match the tone they ask for.",
-  data: "You are Rechatta's Data agent. Help the user analyze data, spot trends, and explain findings in plain language.",
+  auto: `You are Rechatta, a helpful AI assistant. Answer clearly and concisely. You have a web search tool — use it for anything time-sensitive or where you're not confident from memory, and cite sources. ${artifactGuidance}`,
+  research: `You are Rechatta's Research agent. Use web search for anything current or fact-sensitive, compare sources, and cite what you find. Be thorough but concise in chat. ${artifactGuidance}`,
+  code: `You are Rechatta's Code agent. Help the user write, debug, and review code. Prefer showing working code over long explanations. ${artifactGuidance}`,
+  writing: `You are Rechatta's Writing agent. Help the user draft, edit, and refine written content. Match the tone they ask for. ${artifactGuidance}`,
+  data: `You are Rechatta's Data agent. Help the user analyze data, spot trends, and explain findings in plain language. ${artifactGuidance}`,
+};
+
+// Tool keys each agent is offered. A key here only takes effect once that
+// tool is actually registered server-side (see route.ts) — e.g. "runCode"
+// is listed for Code/Data ahead of its implementation landing in a later
+// stage, and is silently absent from the request until then.
+export const agentTools: Record<AgentKey, string[]> = {
+  auto: ["webSearch", "runCode", "createArtifact"],
+  research: ["webSearch", "createArtifact"],
+  code: ["webSearch", "runCode", "createArtifact"],
+  writing: ["createArtifact"],
+  data: ["runCode", "createArtifact"],
 };
 
 export type Source = { icon: "wrench" | "link"; label: string };
+
+export type ArtifactKind = "markdown";
+export type Artifact = { kind: ArtifactKind; title: string; content: string };
 
 export type Message = {
   role: "user" | "assistant";
   content: string;
   agent?: AgentKey;
   sources?: Source[];
+  artifacts?: Artifact[];
+  pendingTool?: string;
+  files?: { name: string; mediaType: string }[];
 };
 
-export type Session = {
-  id: string;
-  title: string;
-  description: string;
-  time: string;
-  agents: AgentKey[];
-  preview?: number[];
-  messages?: Message[];
-};
-
-export const sessions: Session[] = [
-  {
-    id: "customer-feedback",
-    title: "Customer feedback themes",
-    description: "Clustering support tickets into recurring issues",
-    time: "1d ago",
-    agents: ["data"],
-    messages: [
-      { role: "user", content: "Summarize last week's support tickets by theme" },
-      {
-        role: "assistant",
-        agent: "data",
-        content:
-          "Three themes stood out: billing confusion (38%), onboarding friction (29%), and API rate-limit questions (18%). Billing tickets spiked right after the Sept 1 pricing update.",
-        sources: [
-          { icon: "wrench", label: "Queried support_tickets.csv (1,204 rows)" },
-          { icon: "wrench", label: "Zendesk API — last 7 days" },
-          { icon: "link", label: "pricing-update-sept.md" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "research-sprint",
-    title: "Research sprint",
-    description: "Comparing three market-entry strategies for the EU launch",
-    time: "2h ago",
-    agents: ["research"],
-  },
-  {
-    id: "quarterly-report",
-    title: "Quarterly report draft",
-    description: "Drafting the Q3 investor summary with revenue charts",
-    time: "3h ago",
-    agents: ["writing", "data"],
-    preview: [40, 70, 55, 90, 35],
-  },
-  {
-    id: "code-review-checklist",
-    title: "Code review checklist",
-    description: "Refactoring the auth middleware and catching edge cases",
-    time: "5h ago",
-    agents: ["code"],
-  },
-];

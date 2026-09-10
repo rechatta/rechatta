@@ -146,6 +146,15 @@
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 html,
 body {
   height: 100%;
@@ -181,14 +190,14 @@ h3 {
 /* reusable component patterns, composed from Tailwind utilities */
 @layer components {
   .nav-item {
-    @apply flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13.6px] font-medium text-text-2 hover:bg-surface-hover hover:text-text-1;
+    @apply flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-[13.6px] font-medium text-text-2 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1;
   }
   .nav-item[aria-current="page"] {
     @apply bg-surface-inset font-semibold text-text-1;
   }
 
   .pill-btn {
-    @apply flex items-center gap-1.5 rounded-full bg-surface-inset px-3 py-1.5 text-[12.5px] font-semibold text-text-2 hover:bg-surface-hover hover:text-text-1;
+    @apply flex items-center gap-1.5 rounded-full bg-surface-inset px-3 py-1.5 text-[12.5px] font-semibold text-text-2 transition-colors duration-150 ease-out active:scale-[.96] hover:bg-surface-hover hover:text-text-1;
   }
 
   .cta-pill {
@@ -202,7 +211,7 @@ h3 {
   }
 
   .orb {
-    @apply relative flex flex-none items-center justify-center rounded-full shadow-orb-glow;
+    @apply relative flex flex-none items-center justify-center rounded-full shadow-orb-glow transition-transform duration-150 ease-out active:scale-[.94];
     background: conic-gradient(from 210deg, var(--orb-a), var(--orb-b) 50%, var(--orb-a) 100%);
   }
   .orb::after {
@@ -218,6 +227,21 @@ h3 {
     @apply flex w-[190px] flex-col gap-px rounded-xl border border-border bg-surface p-1.5 shadow-card-hover;
   }
   .agent-opt {
-    @apply flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[12.8px] font-semibold text-text-1 hover:bg-surface-hover;
+    @apply flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[12.8px] font-semibold text-text-1 transition-colors duration-150 ease-out hover:bg-surface-hover;
+  }
+
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .thin-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .thin-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .thin-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
   }
 }
