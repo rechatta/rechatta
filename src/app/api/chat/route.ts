@@ -2,6 +2,7 @@ import { convertToModelMessages, isStepCount, streamText, type ToolSet, type UIM
 import { chatModel } from "@/lib/ai/provider";
 import { webSearch } from "@/lib/ai/tools/web-search";
 import { createArtifact } from "@/lib/ai/tools/create-artifact";
+import { createRunCodeTool } from "@/lib/ai/tools/run-code";
 import { agentSystemPrompts, agentTools, type AgentKey, type Artifact, type AttachmentPointer } from "@/lib/mock-data";
 import { titleFromMessage } from "@/lib/chat-sessions";
 import { createClient } from "@/lib/supabase/server";
@@ -9,11 +10,11 @@ import { createClient } from "@/lib/supabase/server";
 export const maxDuration = 60;
 
 // Tools actually implemented so far. A key an agent is offered in
-// agentTools but that isn't registered here yet (e.g. "runCode", landing in
-// a later stage) is simply absent from the request.
-function availableTools(): Record<string, ToolSet[string]> {
+// agentTools but that isn't registered here yet is simply absent from the request.
+function availableTools(sessionAttachments: AttachmentPointer[]): Record<string, ToolSet[string]> {
   const tools: Record<string, ToolSet[string]> = { createArtifact };
   if (process.env.TAVILY_API_KEY) tools.webSearch = webSearch;
+  if (process.env.E2B_API_KEY) tools.runCode = createRunCodeTool(sessionAttachments);
   return tools;
 }
 
@@ -26,22 +27,37 @@ function latestUserText(messages: UIMessage[]): string {
     .join("");
 }
 
-type FilePart = { type: "file"; filename?: string; path?: string };
+type FilePart = { type: "file"; filename?: string; mediaType?: string; path?: string; size?: number };
 
 // File parts never reach the model — attachments are read via the runCode
-// tool by path, not by attaching raw bytes to the prompt. Every turn's file
-// parts (current and historical) collapse to a one-line pointer so the model
-// knows the file exists and can pass its path to runCode.
+// tool by filename (resolved server-side against sessionAttachments below),
+// not by attaching raw bytes to the prompt. Every turn's file parts (current
+// and historical) collapse to a one-line pointer so the model knows the file
+// exists and can pass its name to runCode.
 function withFilePointers(messages: UIMessage[]): UIMessage[] {
   return messages.map((m) => {
     const fileParts = (m.parts as FilePart[]).filter((p) => p.type === "file");
     if (fileParts.length === 0) return m;
-    const pointerText = fileParts
-      .map((p) => `[Attached file: ${p.filename ?? "file"} (path: ${p.path ?? "unknown"})]`)
-      .join("\n");
+    const pointerText = fileParts.map((p) => `[Attached file: ${p.filename ?? "file"}]`).join("\n");
     const otherParts = m.parts.filter((p) => p.type !== "file");
     return { ...m, parts: [...otherParts, { type: "text", text: pointerText }] } as UIMessage;
   });
+}
+
+// The model never sees or handles storage paths (see withFilePointers) — this
+// resolves a plain filename the model passes to runCode back to its real
+// path, scanning every turn so a file attached earlier in the session still
+// resolves on a later turn.
+function collectSessionAttachments(messages: UIMessage[]): AttachmentPointer[] {
+  const byPath = new Map<string, AttachmentPointer>();
+  for (const m of messages) {
+    for (const p of m.parts as FilePart[]) {
+      if (p.type === "file" && p.filename && p.path) {
+        byPath.set(p.path, { name: p.filename, mediaType: p.mediaType ?? "application/octet-stream", size: p.size ?? 0, path: p.path });
+      }
+    }
+  }
+  return [...byPath.values()];
 }
 
 export async function POST(req: Request) {
@@ -61,7 +77,7 @@ export async function POST(req: Request) {
   const key = agentKey ?? "auto";
 
   const offered = new Set(agentTools[key]);
-  const implemented = availableTools();
+  const implemented = availableTools(collectSessionAttachments(messages));
   const tools = Object.fromEntries(
     Object.entries(implemented).filter(([name]) => offered.has(name))
   ) as ToolSet;
