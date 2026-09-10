@@ -11,7 +11,6 @@ import {
   IconMic,
   IconArrowUp,
   IconChevron,
-  IconMenu,
   IconCopy,
   IconThumbsUp,
   IconThumbsDown,
@@ -30,6 +29,8 @@ import { Card } from "./ui/card";
 import { Spinner } from "./ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { SidebarTrigger } from "./ui/sidebar";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 
 type ChatMetadata = { agent?: AgentKey; sources?: Source[] };
 type ChatMessage = UIMessage<ChatMetadata>;
@@ -272,7 +273,6 @@ export function CenterPanel({
   sessionMessages,
   onSessionStart,
   onSessionSaved,
-  onToggleSidebar,
   onNewChat,
   user,
 }: {
@@ -282,7 +282,6 @@ export function CenterPanel({
   sessionMessages: StoredMessage[];
   onSessionStart: (id: string) => void;
   onSessionSaved: () => void;
-  onToggleSidebar: () => void;
   onNewChat: () => void;
   user: { name: string };
 }) {
@@ -307,31 +306,6 @@ export function CenterPanel({
   if (openArtifactSession !== sessionId) {
     setOpenArtifactSession(sessionId);
     setOpenArtifact(null);
-  }
-
-  // Resizable desktop artifact panel — drag the left edge. 560px default
-  // (up from a cramped 440px); clamped so the chat column always keeps room.
-  const [panelWidth, setPanelWidth] = useState(560);
-  const resizingRef = useRef(false);
-
-  function startPanelResize(e: React.MouseEvent) {
-    e.preventDefault();
-    resizingRef.current = true;
-    const startX = e.clientX;
-    const startWidth = panelWidth;
-    function onMove(ev: MouseEvent) {
-      if (!resizingRef.current) return;
-      const next = startWidth - (ev.clientX - startX);
-      const max = Math.min(960, window.innerWidth - 480);
-      setPanelWidth(Math.min(Math.max(next, 400), Math.max(max, 400)));
-    }
-    function onUp() {
-      resizingRef.current = false;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    }
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
   }
 
   const { messages, sendMessage, status, error } = useChat<ChatMessage>({
@@ -412,14 +386,10 @@ export function CenterPanel({
     }
   }
 
-  return (
-    <main className="relative flex min-h-0 min-w-0 flex-col bg-surface">
-    <div className="flex min-h-0 flex-1">
+  const chatColumn = (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex items-center justify-between border-b border-border px-4 py-3.5 min-[861px]:hidden">
-        <Button variant="ghost" size="icon" className="text-text-1" onClick={onToggleSidebar} aria-label="Open navigation">
-          <IconMenu className="size-[18px]" />
-        </Button>
+        <SidebarTrigger className="size-9 text-text-1" />
         <span className="font-heading text-sm font-bold">Rechatta</span>
         <Button variant="ghost" size="icon" className="text-text-1" onClick={onNewChat} aria-label="Start new chat">
           <RiChat1Line className="size-[18px]" />
@@ -551,26 +521,33 @@ export function CenterPanel({
       </div>
       )}
     </div>
+  );
 
-    {mainView === "chat" && openArtifact && (
-      <div className="relative hidden min-h-0 flex-none flex-col border-l border-border min-[861px]:flex" style={{ width: panelWidth }}>
-        <div
-          className="absolute -left-1.5 top-0 z-10 h-full w-3 cursor-col-resize"
-          onMouseDown={startPanelResize}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize artifact panel"
-        />
-        <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
-      </div>
-    )}
-    </div>
+  const showArtifact = mainView === "chat" && openArtifact;
 
-    {mainView === "chat" && openArtifact && (
-      <div className="fixed inset-0 z-40 flex flex-col bg-surface min-[861px]:hidden">
-        <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
-      </div>
-    )}
+  return (
+    <main className="relative flex min-h-0 min-w-0 flex-col bg-surface">
+      {showArtifact ? (
+        <>
+          {/* Desktop: side-by-side resizable panels — drag the handle left to
+              grow the artifact panel, same direction as before. */}
+          <ResizablePanelGroup orientation="horizontal" className="hidden min-h-0 flex-1 min-[861px]:flex">
+            <ResizablePanel minSize={480}>{chatColumn}</ResizablePanel>
+            <ResizableHandle withHandle className="border-border bg-border" />
+            <ResizablePanel defaultSize={560} minSize={400} maxSize={960} className="flex flex-col">
+              <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+          {/* Mobile: artifact is a full-screen overlay instead, so the chat
+              column here just needs to fill the width on its own. */}
+          <div className="flex min-h-0 flex-1 min-[861px]:hidden">{chatColumn}</div>
+          <div className="fixed inset-0 z-40 flex flex-col bg-surface min-[861px]:hidden">
+            <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
+          </div>
+        </>
+      ) : (
+        <div className="flex min-h-0 flex-1">{chatColumn}</div>
+      )}
     </main>
   );
 }

@@ -6,6 +6,7 @@ import { CenterPanel } from "./center-panel";
 import { CommandPalette } from "./command-palette";
 import { SettingsModal } from "./settings-modal";
 import { SvgDefs } from "./svg-defs";
+import { SidebarProvider } from "./ui/sidebar";
 import type { AuthUser } from "@/lib/auth-user";
 import type { ChatSessionSummary, StoredMessage } from "@/lib/chat-sessions";
 
@@ -30,7 +31,6 @@ function setCollapsed(value: boolean) {
 }
 
 export function AppShell({ user }: { user: AuthUser }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const sidebarCollapsed = useSyncExternalStore(subscribeCollapse, getCollapseSnapshot, getCollapseServerSnapshot);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -57,10 +57,6 @@ export function AppShell({ user }: { user: AuthUser }) {
     refreshSessions();
   }, [refreshSessions]);
 
-  const closePanels = () => {
-    setSidebarOpen(false);
-  };
-
   function startNewChat() {
     setActiveSessionId(null);
     setSessionMessages([]);
@@ -76,7 +72,6 @@ export function AppShell({ user }: { user: AuthUser }) {
     setSessionMessages(res.ok ? await res.json() : []);
     setActiveSessionId(id);
     setMainView("chat");
-    closePanels();
   }
 
   async function toggleFavorite(id: string, favorite: boolean) {
@@ -98,7 +93,6 @@ export function AppShell({ user }: { user: AuthUser }) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        closePanels();
         setSettingsOpen(false);
         setPaletteOpen(false);
       }
@@ -113,29 +107,11 @@ export function AppShell({ user }: { user: AuthUser }) {
 
   return (
     <div className="relative h-dvh w-full">
-      <div
-        className={`fixed inset-0 z-50 bg-[rgba(15,15,18,0.4)] transition-opacity duration-200 ${
-          sidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-        onClick={closePanels}
-      />
-
-      <div
-        className={`relative grid h-full w-full overflow-hidden bg-surface transition-[grid-template-columns] duration-200 ease-out max-[860px]:grid-cols-1 ${
-          sidebarCollapsed ? "min-[861px]:grid-cols-[72px_1fr]" : "min-[861px]:grid-cols-[264px_1fr]"
-        }`}
-      >
+      <SidebarProvider open={!sidebarCollapsed} onOpenChange={(open) => setCollapsed(!open)} className="h-full bg-surface">
         <Sidebar
-          open={sidebarOpen}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setCollapsed(!sidebarCollapsed)}
-          onNavigate={closePanels}
           onNewChat={startNewChat}
           onOpenSearch={() => setPaletteOpen(true)}
-          onOpenStudio={() => {
-            setMainView("studio");
-            closePanels();
-          }}
+          onOpenStudio={() => setMainView("studio")}
           onOpenSettings={() => setSettingsOpen(true)}
           activeSessionId={activeSessionId}
           onSelectSession={selectSession}
@@ -152,11 +128,10 @@ export function AppShell({ user }: { user: AuthUser }) {
           sessionMessages={sessionMessages}
           onSessionStart={(id) => setActiveSessionId(id)}
           onSessionSaved={refreshSessions}
-          onToggleSidebar={() => setSidebarOpen((v) => !v)}
           onNewChat={startNewChat}
           user={user}
         />
-      </div>
+      </SidebarProvider>
 
       {paletteOpen && (
         <CommandPalette

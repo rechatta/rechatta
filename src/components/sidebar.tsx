@@ -8,7 +8,6 @@ import {
   RiSettingsLine,
   RiChat1Line,
   RiSearchLine,
-  RiSideBarLine,
   RiMore2Fill,
   RiStarLine,
   RiStarFill,
@@ -16,16 +15,28 @@ import {
   RiLogoutBoxRLine,
 } from "@remixicon/react";
 import { IconSparkle } from "./icons";
-import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarBadge } from "./ui/avatar";
 import { Skeleton } from "./ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+  useSidebar,
+} from "./ui/sidebar";
 import { signOut } from "@/app/auth/actions";
 import type { AuthUser } from "@/lib/auth-user";
 import type { ChatSessionSummary } from "@/lib/chat-sessions";
@@ -36,10 +47,6 @@ const simpleNavItems = [
 ];
 
 export function Sidebar({
-  open,
-  collapsed,
-  onToggleCollapse,
-  onNavigate,
   onNewChat,
   onOpenSearch,
   onOpenStudio,
@@ -52,10 +59,6 @@ export function Sidebar({
   onDeleteSession,
   user,
 }: {
-  open: boolean;
-  collapsed: boolean;
-  onToggleCollapse: () => void;
-  onNavigate: () => void;
   onNewChat: () => void;
   onOpenSearch: () => void;
   onOpenStudio: () => void;
@@ -69,113 +72,89 @@ export function Sidebar({
   user: AuthUser;
 }) {
   const [active, setActive] = useState("");
+  const { state, setOpenMobile } = useSidebar();
+  const collapsed = state === "collapsed";
 
-  // Collapsed-only classes are gated to min-[861px]: so a persisted desktop
-  // collapse never shrinks the mobile overlay drawer, which always renders
-  // at full width regardless of this flag.
-  const label = collapsed
-    ? "min-[861px]:w-0 min-[861px]:opacity-0 min-[861px]:ml-0"
-    : "w-auto opacity-100";
-  const labelBase = "overflow-hidden whitespace-nowrap transition-[width,opacity,margin] duration-200 ease-out";
-  const hideBlock = collapsed ? "min-[861px]:hidden" : "";
-  // Horizontal inset for every section. The scroll container itself (below)
-  // gets none of this, so its native scrollbar sits flush at the sidebar's
-  // true right border instead of floating inset from it.
-  const pad = `px-4 ${collapsed ? "min-[861px]:px-2.5" : ""}`;
+  // Every nav action also dismisses the mobile Sheet drawer — Sidebar's own
+  // primitive, replacing the app's previous hand-rolled overlay/backdrop.
+  function navigate(action: () => void) {
+    action();
+    setOpenMobile(false);
+  }
 
   return (
-    <aside
-      className={`z-30 flex flex-col gap-1 overflow-x-hidden overflow-y-hidden border-r border-border bg-surface pb-4 pt-[22px]
-        max-[860px]:absolute max-[860px]:inset-y-0 max-[860px]:left-0 max-[860px]:w-[min(260px,84%)]
-        max-[860px]:shadow-[16px_0_40px_-20px_rgba(0,0,0,0.3)] max-[860px]:transition-transform max-[860px]:duration-200
-        ${open ? "max-[860px]:translate-x-0" : "max-[860px]:-translate-x-full"}`}
-    >
-      <div className={`flex items-center gap-2.5 pb-4.5 pt-1 ${pad} ${collapsed ? "min-[861px]:flex-col min-[861px]:gap-2" : ""}`}>
-        <span
-          className="flex size-[30px] flex-none items-center justify-center rounded-[10px] text-white"
-          style={{ background: "linear-gradient(135deg, var(--sparkle-a), var(--sparkle-b))" }}
-        >
-          <IconSparkle className="size-[16px]" />
-        </span>
-        <span className={`font-heading text-[16.5px] font-bold tracking-tight text-text-1 ${labelBase} ${label}`}>
-          Rechatta
-        </span>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className={`ml-auto flex-none text-text-3 hover:text-text-1 ${collapsed ? "min-[861px]:ml-0" : ""}`}
-              onClick={onToggleCollapse}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <RiSideBarLine className="size-[16px]" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{collapsed ? "Expand sidebar" : "Collapse sidebar"}</TooltipContent>
-        </Tooltip>
-      </div>
-
-      <div className={`flex flex-col gap-1 ${pad}`}>
-        <button
-          className="nav-item"
-          onClick={() => {
-            onNewChat();
-            onNavigate();
-          }}
-        >
+    <ShadcnSidebar collapsible="icon" className="border-border">
+      <SidebarHeader className="gap-0 px-2 pb-2.5 pt-2">
+        <div className={`flex items-center gap-2.5 px-1.5 py-1 ${collapsed ? "flex-col gap-2" : ""}`}>
           <span
-            className="flex size-6 flex-none items-center justify-center rounded-full text-white"
-            style={{ background: "linear-gradient(135deg, var(--deep-a), var(--deep-c) 55%, var(--deep-b))" }}
+            className="flex size-[30px] flex-none items-center justify-center rounded-[10px] text-white"
+            style={{ background: "linear-gradient(135deg, var(--sparkle-a), var(--sparkle-b))" }}
           >
-            <RiChat1Line className="size-[13px]" />
+            <IconSparkle className="size-[16px]" />
           </span>
-          <span className={`${labelBase} ${label}`}>New chat</span>
-        </button>
+          {!collapsed && <span className="font-heading text-[16.5px] font-bold tracking-tight text-text-1">Rechatta</span>}
+          <SidebarTrigger className={`text-text-3 hover:text-text-1 ${collapsed ? "" : "ml-auto"}`} />
+        </div>
+      </SidebarHeader>
 
-        <button className="nav-item" onClick={onOpenSearch}>
-          <RiSearchLine className="size-[18px] flex-none" />
-          <span className={`${labelBase} ${label}`}>Search chats</span>
-        </button>
-      </div>
-
-      <div className="thin-scroll flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
-        <div className={pad}>
-          <nav className="mb-1.5 mt-1.5 flex flex-col gap-px">
-            <button className="nav-item" title={collapsed ? "Studio" : undefined} onClick={onOpenStudio}>
-              <RiAppsLine className="size-[18px] flex-none" />
-              <span className={`${labelBase} ${label}`}>Studio</span>
-            </button>
-
-            {simpleNavItems.map(({ label: itemLabel, icon: Icon }) => (
-              <button
-                key={itemLabel}
-                className="nav-item"
-                aria-current={active === itemLabel ? "page" : undefined}
-                title={collapsed ? itemLabel : undefined}
-                onClick={() => {
-                  setActive(itemLabel);
-                  onNavigate();
-                }}
+      <SidebarGroup>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="New chat" onClick={() => navigate(onNewChat)}>
+              <span
+                className="flex size-6 flex-none items-center justify-center rounded-full text-white"
+                style={{ background: "linear-gradient(135deg, var(--deep-a), var(--deep-c) 55%, var(--deep-b))" }}
               >
-                <Icon className="size-[18px] flex-none" />
-                <span className={`${labelBase} ${label}`}>{itemLabel}</span>
-              </button>
+                <RiChat1Line className="size-[13px]" />
+              </span>
+              <span>New chat</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Search chats" onClick={() => navigate(onOpenSearch)}>
+              <RiSearchLine className="size-[18px]" />
+              <span>Search chats</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroup>
+
+      <SidebarContent className="thin-scroll">
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Studio" onClick={() => navigate(onOpenStudio)}>
+                <RiAppsLine className="size-[18px]" />
+                <span>Studio</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {simpleNavItems.map(({ label, icon: Icon }) => (
+              <SidebarMenuItem key={label}>
+                <SidebarMenuButton
+                  tooltip={label}
+                  isActive={active === label}
+                  onClick={() => navigate(() => setActive(label))}
+                >
+                  <Icon className="size-[18px]" />
+                  <span>{label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             ))}
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Settings" onClick={() => navigate(onOpenSettings)}>
+                <RiSettingsLine className="size-[18px]" />
+                <span>Settings</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
 
-            <button className="nav-item" title={collapsed ? "Settings" : undefined} onClick={onOpenSettings}>
-              <RiSettingsLine className="size-[18px] flex-none" />
-              <span className={`${labelBase} ${label}`}>Settings</span>
-            </button>
-          </nav>
-
-          <div className={hideBlock}>
+        {!collapsed && (
+          <>
             {sessions.some((s) => s.favorite) && (
-              <>
-                <div className="px-3 py-1.5 pt-3.5 text-[11px] font-bold uppercase tracking-wider text-text-3">
-                  Favorites
-                </div>
-                <div className="flex flex-col gap-0.5">
+              <SidebarGroup>
+                <SidebarGroupLabel>Favorites</SidebarGroupLabel>
+                <SidebarMenu>
                   {sessions
                     .filter((s) => s.favorite)
                     .map((session) => (
@@ -183,84 +162,77 @@ export function Sidebar({
                         key={session.id}
                         session={session}
                         isActive={session.id === activeSessionId}
-                        onSelect={() => {
-                          onSelectSession(session.id);
-                          onNavigate();
-                        }}
+                        onSelect={() => navigate(() => onSelectSession(session.id))}
                         onToggleFavorite={onToggleFavorite}
                         onDelete={onDeleteSession}
                       />
                     ))}
-                </div>
-              </>
+                </SidebarMenu>
+              </SidebarGroup>
             )}
 
-            <div className="px-3 py-1.5 pt-3.5 text-[11px] font-bold uppercase tracking-wider text-text-3">Chats</div>
-            <div className="flex flex-col gap-0.5">
-              {!sessionsLoaded &&
-                [0, 1, 2].map((i) => <Skeleton key={i} className="mx-3 my-1 h-[30px] rounded-lg" />)}
-              {sessionsLoaded && sessions.length === 0 && (
-                <p className="px-3 py-2 text-[12px] text-text-3">No chats yet</p>
-              )}
-              {sessions
-                .filter((s) => !s.favorite)
-                .map((session) => (
-                  <ChatRow
-                    key={session.id}
-                    session={session}
-                    isActive={session.id === activeSessionId}
-                    onSelect={() => {
-                      onSelectSession(session.id);
-                      onNavigate();
-                    }}
-                    onToggleFavorite={onToggleFavorite}
-                    onDelete={onDeleteSession}
-                  />
-                ))}
-            </div>
-          </div>
-        </div>
-      </div>
+            <SidebarGroup>
+              <SidebarGroupLabel>Chats</SidebarGroupLabel>
+              <SidebarMenu>
+                {!sessionsLoaded && [0, 1, 2].map((i) => <Skeleton key={i} className="mx-1 h-8 rounded-md" />)}
+                {sessionsLoaded && sessions.length === 0 && (
+                  <p className="px-2 py-2 text-[12px] text-text-3">No chats yet</p>
+                )}
+                {sessions
+                  .filter((s) => !s.favorite)
+                  .map((session) => (
+                    <ChatRow
+                      key={session.id}
+                      session={session}
+                      isActive={session.id === activeSessionId}
+                      onSelect={() => navigate(() => onSelectSession(session.id))}
+                      onToggleFavorite={onToggleFavorite}
+                      onDelete={onDeleteSession}
+                    />
+                  ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
+      </SidebarContent>
 
-      <div className={pad}>
-        <div
-          className={`mt-2.5 flex flex-col gap-2.5 rounded-2xl bg-surface-inset p-2.5 ${collapsed ? "min-[861px]:items-center min-[861px]:bg-transparent min-[861px]:p-0" : ""}`}
-        >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex w-full items-center gap-2.5 rounded-xl p-1 text-left transition-colors duration-150 ease-out hover:bg-surface-hover">
-                <Avatar className="flex-none bg-linear-to-br from-sparkle-a to-sparkle-b text-[12.5px] font-bold text-white">
-                  <AvatarFallback className="bg-transparent text-[12.5px] font-bold text-white">
-                    {user.initials}
-                  </AvatarFallback>
-                  <AvatarBadge className="bg-[#2fb463] ring-surface-inset" />
-                </Avatar>
-                <span className={`min-w-0 flex-1 truncate text-[13px] font-semibold text-text-1 ${labelBase} ${label}`}>
-                  {user.name}
-                </span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" className="w-[220px] rounded-xl p-1.5">
-              <div className="truncate px-2.5 py-2 text-[12px] text-text-3">{user.email}</div>
-              <form action={signOut} className="w-full">
-                <DropdownMenuItem asChild>
-                  <button type="submit" className="w-full font-medium">
-                    <RiLogoutBoxRLine className="size-[15px] flex-none" />
-                    Sign out
-                  </button>
-                </DropdownMenuItem>
-              </form>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <button className={`cta-pill ${hideBlock}`}>
+      <SidebarFooter className={collapsed ? "items-center" : ""}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-2.5 rounded-xl p-1 text-left transition-colors duration-150 ease-out hover:bg-surface-hover">
+              <Avatar className="flex-none bg-linear-to-br from-sparkle-a to-sparkle-b text-[12.5px] font-bold text-white">
+                <AvatarFallback className="bg-transparent text-[12.5px] font-bold text-white">
+                  {user.initials}
+                </AvatarFallback>
+                <AvatarBadge className="bg-[#2fb463] ring-surface-inset" />
+              </Avatar>
+              {!collapsed && (
+                <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text-1">{user.name}</span>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="w-[220px] rounded-xl p-1.5">
+            <div className="truncate px-2.5 py-2 text-[12px] text-text-3">{user.email}</div>
+            <form action={signOut} className="w-full">
+              <DropdownMenuItem asChild>
+                <button type="submit" className="w-full font-medium">
+                  <RiLogoutBoxRLine className="size-[15px] flex-none" />
+                  Sign out
+                </button>
+              </DropdownMenuItem>
+            </form>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {!collapsed && (
+          <button className="cta-pill">
             <span className="cta-orb orb size-6">
               <IconSparkle className="size-[15px]" />
             </span>
             <span className="cta-label">Upgrade now</span>
           </button>
-        </div>
-      </div>
-    </aside>
+        )}
+      </SidebarFooter>
+    </ShadcnSidebar>
   );
 }
 
@@ -280,24 +252,23 @@ function ChatRow({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div
-      className={`group relative flex w-full items-center gap-1 rounded-xl px-3 py-2 transition-colors duration-150 ease-out hover:bg-surface-hover ${isActive ? "bg-surface-inset" : ""}`}
-    >
-      <button className="min-w-0 flex-1 text-left" onClick={onSelect}>
-        <span className="block truncate text-[12.8px] font-medium text-text-1">{session.title}</span>
-      </button>
-      <span className="flex-none font-mono text-[10.5px] text-text-3 group-hover:hidden">{session.time}</span>
+    <SidebarMenuItem>
+      <SidebarMenuButton isActive={isActive} onClick={onSelect} className="pr-7">
+        <span className="min-w-0 flex-1 truncate">{session.title}</span>
+        <span className="flex-none font-mono text-[10.5px] text-text-3 group-hover/menu-item:hidden">
+          {session.time}
+        </span>
+      </SidebarMenuButton>
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            className={`text-text-3 hover:text-text-1 ${menuOpen ? "flex" : "hidden group-hover:flex"}`}
+          <SidebarMenuAction
+            showOnHover
+            className="text-text-3 hover:text-text-1 data-[state=open]:bg-surface-hover"
             onClick={(e) => e.stopPropagation()}
             aria-label="Chat options"
           >
             <RiMore2Fill className="size-[14px]" />
-          </Button>
+          </SidebarMenuAction>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="bottom" align="end" className="w-[180px] rounded-xl p-1.5">
           <DropdownMenuItem onClick={() => onToggleFavorite(session.id, !session.favorite)}>
@@ -314,6 +285,6 @@ function ChatRow({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+    </SidebarMenuItem>
   );
 }
