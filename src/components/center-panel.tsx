@@ -153,7 +153,7 @@ function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpe
         </div>
       )}
       {message.content && (
-        <div className="inline-block max-w-[80%] rounded-2xl rounded-bl-md bg-surface-inset px-3.5 py-2.5 text-[13.8px] leading-relaxed text-text-1">
+        <div className="inline-block max-w-[80%] min-w-0 [overflow-wrap:anywhere] rounded-2xl rounded-bl-md bg-surface-inset px-3.5 py-2.5 text-[13.8px] leading-relaxed text-text-1">
           {message.content}
         </div>
       )}
@@ -233,7 +233,9 @@ function ThreadView({ messages, onOpenArtifact }: { messages: Message[]; onOpenA
               </div>
             )}
             {message.content && (
-              <div className="max-w-[80%] rounded-2xl rounded-br-md bg-surface-inset px-3.5 py-2.5 text-[13.8px]">{message.content}</div>
+              <div className="max-w-[80%] min-w-0 [overflow-wrap:anywhere] rounded-2xl rounded-br-md bg-surface-inset px-3.5 py-2.5 text-[13.8px]">
+                {message.content}
+              </div>
             )}
           </div>
         ) : (
@@ -286,6 +288,31 @@ export function CenterPanel({
   if (openArtifactSession !== sessionId) {
     setOpenArtifactSession(sessionId);
     setOpenArtifact(null);
+  }
+
+  // Resizable desktop artifact panel — drag the left edge. 560px default
+  // (up from a cramped 440px); clamped so the chat column always keeps room.
+  const [panelWidth, setPanelWidth] = useState(560);
+  const resizingRef = useRef(false);
+
+  function startPanelResize(e: React.MouseEvent) {
+    e.preventDefault();
+    resizingRef.current = true;
+    const startX = e.clientX;
+    const startWidth = panelWidth;
+    function onMove(ev: MouseEvent) {
+      if (!resizingRef.current) return;
+      const next = startWidth - (ev.clientX - startX);
+      const max = Math.min(960, window.innerWidth - 480);
+      setPanelWidth(Math.min(Math.max(next, 400), Math.max(max, 400)));
+    }
+    function onUp() {
+      resizingRef.current = false;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
   }
 
   const { messages, sendMessage, status, error } = useChat<ChatMessage>({
@@ -393,7 +420,7 @@ export function CenterPanel({
       {mainView === "studio" ? (
         <StudioView />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-8 pb-4 pt-9">
+        <div className="thin-scroll flex min-h-0 flex-1 flex-col items-center overflow-y-auto overflow-x-hidden px-8 pb-4 pt-9">
           {displayMessages.length > 0 ? (
             <ThreadView messages={displayMessages} onOpenArtifact={setOpenArtifact} />
           ) : (
@@ -510,7 +537,14 @@ export function CenterPanel({
     </div>
 
     {mainView === "chat" && openArtifact && (
-      <div className="hidden min-h-0 w-[440px] flex-none flex-col border-l border-border min-[861px]:flex">
+      <div className="relative hidden min-h-0 flex-none flex-col border-l border-border min-[861px]:flex" style={{ width: panelWidth }}>
+        <div
+          className="absolute -left-1.5 top-0 z-10 h-full w-3 cursor-col-resize"
+          onMouseDown={startPanelResize}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize artifact panel"
+        />
         <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
       </div>
     )}

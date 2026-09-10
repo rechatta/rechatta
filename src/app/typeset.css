@@ -15,6 +15,16 @@
   font-size: 14.5px;
   line-height: 1.75;
   color: var(--text-1);
+  /* Long unbroken runs (URLs, tokens) must wrap instead of forcing the panel
+     into a page-wide horizontal scrollbar (overflow-y: auto alone computes
+     overflow-x to auto per spec once content overflows). */
+  overflow-wrap: anywhere;
+}
+
+.artifact-prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
 }
 
 .artifact-prose > * + * {

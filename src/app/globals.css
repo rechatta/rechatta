@@ -167,6 +167,16 @@ body {
   background: var(--surface-inset);
 }
 
+/* Tailwind v4 preflight resets button cursor to `default`, unlike v3 — this
+   restores the pointer affordance on every native interactive control. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+select,
+summary {
+  cursor: pointer;
+}
+
 h1,
 h2,
 h3 {
