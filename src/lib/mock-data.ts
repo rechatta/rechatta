@@ -16,7 +16,7 @@ export const agentBadgeColors: Record<Exclude<AgentKey, "auto">, { fg: string; b
 };
 
 const artifactGuidance =
-  "When your answer is a document rather than a quick reply (a written draft, a summary, a report, a study guide), call createArtifact with kind \"markdown\" instead of writing it inline — keep your chat reply to one short sentence and let the artifact hold the long-form content. The artifact is already rendered for the user right below your reply, so never write a download link, a file path, or any \"sandbox:\" reference in your chat text — just say something like \"Here's the draft.\"";
+  "When your answer is a document rather than a quick reply (a written draft, a summary, a report, a study guide), call createArtifact with kind \"markdown\" instead of writing it inline — keep your chat reply to one short sentence and let the artifact hold the long-form content. When the user asks for a webpage, landing page, UI mockup, or any HTML/CSS/JS design, call createArtifact with kind \"html\" and put the full self-contained HTML document (inline <style>/<script>, no external requests) in content — never paste it as a fenced code block in chat, and don't use kind \"markdown\" for it. The artifact is already rendered for the user right below your reply, so never write a download link, a file path, or any \"sandbox:\" reference in your chat text — just say something like \"Here's the draft.\"";
 
 const runCodeGuidance =
   "You have a runCode tool that executes Python in a sandbox (pandas/numpy/matplotlib available) — use it for any real calculation, data analysis, or computing over a tabular file (csv, xlsx) instead of reasoning through numbers yourself. A message may include a line like \"[Attached file: report.csv]\" — pass that exact filename as runCode's fileName argument, then read it in your code from /home/user/report.csv. For reading or summarizing a prose document (pdf, docx, txt) instead of computing over tabular data, use readDocument instead.";
@@ -46,7 +46,7 @@ export const agentTools: Record<AgentKey, string[]> = {
 
 export type Source = { icon: "wrench" | "link"; label: string };
 
-export type ArtifactKind = "markdown";
+export type ArtifactKind = "markdown" | "html";
 export type Artifact = { kind: ArtifactKind; title: string; content: string };
 
 // path is the permanent Supabase Storage object path ("{user_id}/{session_id}/...") —
