@@ -39,6 +39,7 @@ yarn-error.log*
 # claude code
 .claude/
 .mcp.json
+SESSION_HANDOFF.md
 
 # typescript
 *.tsbuildinfo

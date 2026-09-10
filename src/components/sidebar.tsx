@@ -16,6 +16,7 @@ import {
   RiLogoutBoxRLine,
 } from "@remixicon/react";
 import { IconSparkle } from "./icons";
+import { Button } from "./ui/button";
 import { signOut } from "@/app/auth/actions";
 import type { AuthUser } from "@/lib/auth-user";
 import type { ChatSessionSummary } from "@/lib/chat-sessions";
@@ -91,14 +92,16 @@ export function Sidebar({
         <span className={`font-heading text-[16.5px] font-bold tracking-tight text-text-1 ${labelBase} ${label}`}>
           Rechatta
         </span>
-        <button
-          className={`ml-auto flex-none rounded-lg p-1.5 text-text-3 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1 ${collapsed ? "min-[861px]:ml-0" : ""}`}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className={`ml-auto flex-none text-text-3 hover:text-text-1 ${collapsed ? "min-[861px]:ml-0" : ""}`}
           onClick={onToggleCollapse}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <RiSideBarLine className="size-[16px]" />
-        </button>
+        </Button>
       </div>
 
       <div className={`flex flex-col gap-1 ${pad}`}>
