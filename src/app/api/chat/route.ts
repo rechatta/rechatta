@@ -3,6 +3,7 @@ import { chatModel } from "@/lib/ai/provider";
 import { webSearch } from "@/lib/ai/tools/web-search";
 import { createArtifact } from "@/lib/ai/tools/create-artifact";
 import { createRunCodeTool } from "@/lib/ai/tools/run-code";
+import { createReadDocumentTool } from "@/lib/ai/tools/read-document";
 import { agentSystemPrompts, agentTools, type AgentKey, type Artifact, type AttachmentPointer } from "@/lib/mock-data";
 import { titleFromMessage } from "@/lib/chat-sessions";
 import { createClient } from "@/lib/supabase/server";
@@ -12,7 +13,7 @@ export const maxDuration = 60;
 // Tools actually implemented so far. A key an agent is offered in
 // agentTools but that isn't registered here yet is simply absent from the request.
 function availableTools(sessionAttachments: AttachmentPointer[]): Record<string, ToolSet[string]> {
-  const tools: Record<string, ToolSet[string]> = { createArtifact };
+  const tools: Record<string, ToolSet[string]> = { createArtifact, readDocument: createReadDocumentTool(sessionAttachments) };
   if (process.env.TAVILY_API_KEY) tools.webSearch = webSearch;
   if (process.env.E2B_API_KEY) tools.runCode = createRunCodeTool(sessionAttachments);
   return tools;

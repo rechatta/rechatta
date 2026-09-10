@@ -142,7 +142,13 @@ function AssistantMessage({ message }: { message: Message }) {
       {message.pendingTool && (
         <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] text-text-3">
           <span className="size-1.5 animate-pulse rounded-full bg-sparkle-a" />
-          {message.pendingTool === "webSearch" ? "Searching the web…" : message.pendingTool === "runCode" ? "Running code…" : "Working…"}
+          {message.pendingTool === "webSearch"
+            ? "Searching the web…"
+            : message.pendingTool === "runCode"
+              ? "Running code…"
+              : message.pendingTool === "readDocument"
+                ? "Reading document…"
+                : "Working…"}
         </div>
       )}
       {message.content && (
