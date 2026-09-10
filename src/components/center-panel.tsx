@@ -31,6 +31,18 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { SidebarTrigger } from "./ui/sidebar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
+import { Marker, MarkerIcon, MarkerContent } from "./ui/marker";
+import { ScrollArea } from "./ui/scroll-area";
+import {
+  Attachment,
+  AttachmentMedia,
+  AttachmentContent,
+  AttachmentTitle,
+  AttachmentDescription,
+  AttachmentActions,
+  AttachmentAction,
+  AttachmentGroup,
+} from "./ui/attachment";
 
 type ChatMetadata = { agent?: AgentKey; sources?: Source[] };
 type ChatMessage = UIMessage<ChatMetadata>;
@@ -150,16 +162,20 @@ function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpe
         </Badge>
       )}
       {message.pendingTool && (
-        <div className="mb-1.5 flex items-center gap-1.5 text-[12.5px] text-text-3">
-          <span className="size-1.5 animate-pulse rounded-full bg-sparkle-a" />
-          {message.pendingTool === "webSearch"
-            ? "Searching the web…"
-            : message.pendingTool === "runCode"
-              ? "Running code…"
-              : message.pendingTool === "readDocument"
-                ? "Reading document…"
-                : "Working…"}
-        </div>
+        <Marker className="mb-1.5 w-auto text-[12.5px]">
+          <MarkerIcon>
+            <span className="block size-1.5 animate-pulse rounded-full bg-sparkle-a" />
+          </MarkerIcon>
+          <MarkerContent>
+            {message.pendingTool === "webSearch"
+              ? "Searching the web…"
+              : message.pendingTool === "runCode"
+                ? "Running code…"
+                : message.pendingTool === "readDocument"
+                  ? "Reading document…"
+                  : "Working…"}
+          </MarkerContent>
+        </Marker>
       )}
       {message.content && (
         <div className="inline-block max-w-[80%] min-w-0 [overflow-wrap:anywhere] rounded-2xl rounded-bl-md bg-surface-inset px-3.5 py-2.5 text-[13.8px] leading-relaxed text-text-1">
@@ -239,18 +255,19 @@ function ThreadView({ messages, onOpenArtifact }: { messages: Message[]; onOpenA
         message.role === "user" ? (
           <div key={i} className="flex flex-col items-end gap-1.5 [animation:fade-in_0.2s_ease-out_both]">
             {message.files && message.files.length > 0 && (
-              <div className="flex max-w-[80%] flex-wrap justify-end gap-1.5">
+              <AttachmentGroup className="max-w-[80%] justify-end">
                 {message.files.map((f, j) => (
-                  <div
-                    key={j}
-                    className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[12px] text-text-2"
-                  >
-                    <RiFileLine className="size-[14px] flex-none text-text-3" />
-                    <span className="max-w-[160px] truncate font-medium text-text-1">{f.name}</span>
-                    <span className="text-text-3">{formatFileSize(f.size)}</span>
-                  </div>
+                  <Attachment key={j} size="sm">
+                    <AttachmentMedia>
+                      <RiFileLine className="size-[14px]" />
+                    </AttachmentMedia>
+                    <AttachmentContent>
+                      <AttachmentTitle className="max-w-[160px] truncate">{f.name}</AttachmentTitle>
+                      <AttachmentDescription>{formatFileSize(f.size)}</AttachmentDescription>
+                    </AttachmentContent>
+                  </Attachment>
                 ))}
-              </div>
+              </AttachmentGroup>
             )}
             {message.content && (
               <div className="max-w-[80%] min-w-0 [overflow-wrap:anywhere] rounded-2xl rounded-br-md bg-surface-inset px-3.5 py-2.5 text-[13.8px]">
@@ -399,12 +416,19 @@ export function CenterPanel({
       {mainView === "studio" ? (
         <StudioView />
       ) : (
-        <div className="thin-scroll flex min-h-0 flex-1 flex-col items-center overflow-y-auto overflow-x-hidden px-8 pb-4 pt-9">
-          {displayMessages.length > 0 ? (
-            <ThreadView messages={displayMessages} onOpenArtifact={setOpenArtifact} />
-          ) : (
-            <WelcomeView name={user.name} />
-          )}
+        <div className="relative min-h-0 flex-1">
+          {/* Fades content approaching the header/mobile-bar edge instead of
+              the hard clip a plain overflow container leaves. */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-surface to-transparent" />
+          <ScrollArea className="h-full">
+            <div className="flex min-h-0 flex-col items-center px-8 pb-4 pt-9">
+              {displayMessages.length > 0 ? (
+                <ThreadView messages={displayMessages} onOpenArtifact={setOpenArtifact} />
+              ) : (
+                <WelcomeView name={user.name} />
+              )}
+            </div>
+          </ScrollArea>
         </div>
       )}
 
@@ -415,25 +439,24 @@ export function CenterPanel({
         )}
         <div className="mx-auto max-w-[720px] rounded-[22px] border border-border bg-surface px-3.5 pb-2.5 pt-3 shadow-card">
           {attachments.length > 0 && (
-            <div className="mb-2.5 flex flex-wrap gap-1.5">
+            <AttachmentGroup className="mb-2.5">
               {attachments.map((a) => (
-                <div
-                  key={a.path}
-                  className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-inset px-2.5 py-1.5 text-[12px] text-text-2"
-                >
-                  <RiFileLine className="size-[14px] flex-none text-text-3" />
-                  <span className="max-w-[160px] truncate font-medium text-text-1">{a.name}</span>
-                  <span className="text-text-3">{formatFileSize(a.size)}</span>
-                  <button
-                    className="flex size-4 flex-none items-center justify-center rounded-full text-text-3 hover:bg-surface-hover hover:text-text-1"
-                    onClick={() => removeAttachment(a.path)}
-                    aria-label={`Remove ${a.name}`}
-                  >
-                    <RiCloseLine className="size-[13px]" />
-                  </button>
-                </div>
+                <Attachment key={a.path} size="sm" state={uploading ? "uploading" : "done"}>
+                  <AttachmentMedia>
+                    <RiFileLine className="size-[14px]" />
+                  </AttachmentMedia>
+                  <AttachmentContent>
+                    <AttachmentTitle className="max-w-[160px] truncate">{a.name}</AttachmentTitle>
+                    <AttachmentDescription>{formatFileSize(a.size)}</AttachmentDescription>
+                  </AttachmentContent>
+                  <AttachmentActions>
+                    <AttachmentAction onClick={() => removeAttachment(a.path)} aria-label={`Remove ${a.name}`}>
+                      <RiCloseLine className="size-[13px]" />
+                    </AttachmentAction>
+                  </AttachmentActions>
+                </Attachment>
               ))}
-            </div>
+            </AttachmentGroup>
           )}
           <div className="flex items-start gap-2.5">
             <IconSparkle className="mt-0.5 size-[18px] flex-none text-sparkle-a" />
@@ -449,21 +472,25 @@ export function CenterPanel({
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFilesSelected} />
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="secondary"
                   size="icon"
                   className="size-8.5 flex-none rounded-full text-text-2 hover:text-text-1"
                   aria-label="Attach file"
                   disabled={uploading}
-                  onClick={() => fileInputRef.current?.click()}
                 >
                   {uploading ? <RiLoader4Line className="size-[16px] animate-spin" /> : <IconClip className="size-[16px]" />}
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>Attach file</TooltipContent>
-            </Tooltip>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-[200px] rounded-xl p-1.5">
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                  <IconClip className="size-[15px] flex-none" />
+                  Upload from computer
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DropdownMenu open={agentMenuOpen} onOpenChange={setAgentMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <button className="pill-btn">

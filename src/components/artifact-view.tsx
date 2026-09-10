@@ -7,6 +7,8 @@ import { IconCopy, IconCheck } from "./icons";
 import { RiCloseLine, RiDownloadLine } from "@remixicon/react";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "./ui/tabs";
+import { ScrollArea } from "./ui/scroll-area";
 
 // A generated page can set `overflow: hidden` / fixed heights on html/body
 // (e.g. a full-viewport hero) which leaves no way to reach the rest of the
@@ -53,82 +55,98 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
     setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-none items-center justify-between border-b border-border px-4 py-3">
-        <span className="truncate text-[13px] font-bold text-text-1">{artifact.title}</span>
-        <div className="flex flex-none items-center gap-1.5">
-          {artifact.kind === "html" && (
-            <div className="flex items-center rounded-lg bg-surface-inset p-0.5 text-[11.5px] font-semibold">
-              <button
-                className={`rounded-md px-2.5 py-1 transition-colors duration-150 ease-out ${tab === "preview" ? "bg-surface text-text-1 shadow-card" : "text-text-3 hover:text-text-1"}`}
-                onClick={() => setTab("preview")}
+  const actions = (
+    <div className="flex flex-none items-center gap-1.5">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={copy} aria-label="Copy content">
+            {copied ? <IconCheck className="size-[14px]" /> : <IconCopy className="size-[14px]" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Copy content</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={download} aria-label="Download">
+            <RiDownloadLine className="size-[15px]" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Download</TooltipContent>
+      </Tooltip>
+      {onClose && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={onClose} aria-label="Close">
+              <RiCloseLine className="size-[16px]" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Close</TooltipContent>
+        </Tooltip>
+      )}
+    </div>
+  );
+
+  if (artifact.kind === "html") {
+    return (
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "preview" | "code")} className="flex h-full min-h-0 flex-col gap-0">
+        <div className="flex flex-none items-center justify-between border-b border-border px-4 py-3">
+          <span className="truncate text-[13px] font-bold text-text-1">{artifact.title}</span>
+          <div className="flex flex-none items-center gap-1.5">
+            <TabsList className="h-auto rounded-lg bg-surface-inset p-0.5">
+              <TabsTrigger
+                value="preview"
+                className="rounded-md px-2.5 py-1 text-[11.5px] font-semibold text-text-3 data-[state=active]:bg-surface data-[state=active]:text-text-1 data-[state=active]:shadow-card"
               >
                 Preview
-              </button>
-              <button
-                className={`rounded-md px-2.5 py-1 transition-colors duration-150 ease-out ${tab === "code" ? "bg-surface text-text-1 shadow-card" : "text-text-3 hover:text-text-1"}`}
-                onClick={() => setTab("code")}
+              </TabsTrigger>
+              <TabsTrigger
+                value="code"
+                className="rounded-md px-2.5 py-1 text-[11.5px] font-semibold text-text-3 data-[state=active]:bg-surface data-[state=active]:text-text-1 data-[state=active]:shadow-card"
               >
                 Code
-              </button>
-            </div>
-          )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={copy} aria-label="Copy content">
-                {copied ? <IconCheck className="size-[14px]" /> : <IconCopy className="size-[14px]" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Copy content</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={download} aria-label="Download">
-                <RiDownloadLine className="size-[15px]" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Download</TooltipContent>
-          </Tooltip>
-          {onClose && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={onClose} aria-label="Close">
-                  <RiCloseLine className="size-[16px]" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Close</TooltipContent>
-            </Tooltip>
-          )}
+              </TabsTrigger>
+            </TabsList>
+            {actions}
+          </div>
         </div>
-      </div>
-
-      {artifact.kind === "html" ? (
-        tab === "preview" ? (
-          // No allow-same-origin: the embedded page can run script but gets
-          // an opaque origin, with no access to this app's cookies/storage.
-          // allow-forms/allow-popups/allow-modals don't reintroduce that risk —
-          // they just let generated forms, target="_blank" links, and
-          // alert()/confirm() actually work instead of silently no-oping.
+        <TabsContent value="preview" className="m-0 flex min-h-0 flex-1 flex-col">
+          {/* No allow-same-origin: the embedded page can run script but gets
+              an opaque origin, with no access to this app's cookies/storage.
+              allow-forms/allow-popups/allow-modals don't reintroduce that risk —
+              they just let generated forms, target="_blank" links, and
+              alert()/confirm() actually work instead of silently no-oping. */}
           <iframe
             srcDoc={withScrollSafety(artifact.content)}
             sandbox="allow-scripts allow-forms allow-popups allow-modals"
             title={artifact.title}
             className="min-h-0 w-full flex-1 bg-white"
           />
-        ) : (
-          // No horizontal scroll inside the artifact — the panel itself
-          // expands (drag its left edge) for long lines instead of a nested
-          // x-scrollbar, so code wraps rather than overflowing sideways.
-          <pre className="thin-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden whitespace-pre-wrap break-words bg-surface-inset px-5 py-4 font-mono text-[12.5px] leading-relaxed text-text-1">
-            <code>{artifact.content}</code>
-          </pre>
-        )
-      ) : (
-        <div className="artifact-prose thin-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4">
+        </TabsContent>
+        <TabsContent value="code" className="m-0 flex min-h-0 flex-1 flex-col bg-surface-inset">
+          <ScrollArea className="h-full">
+            {/* No horizontal scroll inside the artifact — the panel itself
+                expands (drag its left edge) for long lines instead of a nested
+                x-scrollbar, so code wraps rather than overflowing sideways. */}
+            <pre className="whitespace-pre-wrap break-words px-5 py-4 font-mono text-[12.5px] leading-relaxed text-text-1">
+              <code>{artifact.content}</code>
+            </pre>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex flex-none items-center justify-between border-b border-border px-4 py-3">
+        <span className="truncate text-[13px] font-bold text-text-1">{artifact.title}</span>
+        {actions}
+      </div>
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="artifact-prose px-5 py-4">
           <ReactMarkdown>{artifact.content}</ReactMarkdown>
         </div>
-      )}
+      </ScrollArea>
     </div>
   );
 }
