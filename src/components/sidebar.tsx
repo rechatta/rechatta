@@ -6,7 +6,6 @@ import {
   RiStackLine,
   RiArchiveLine,
   RiSettingsLine,
-  RiChat1Line,
   RiSearchLine,
   RiMore2Fill,
   RiStarLine,
@@ -14,6 +13,7 @@ import {
   RiDeleteBin6Line,
   RiLogoutBoxRLine,
   RiSideBarLine,
+  RiEditBoxLine,
 } from "@remixicon/react";
 import { IconSparkle } from "./icons";
 import { Avatar, AvatarFallback, AvatarBadge } from "./ui/avatar";
@@ -98,17 +98,37 @@ export function Sidebar({
     <ShadcnSidebar collapsible="icon" className="border-border">
       <SidebarHeader className="gap-0 px-2 pb-2.5 pt-2">
         <div className={`flex items-center gap-2.5 px-1.5 py-1 ${collapsed ? "flex-col gap-2" : ""}`}>
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="group/logo relative flex size-[30px] flex-none items-center justify-center rounded-[10px] text-white"
-            style={{ background: "linear-gradient(135deg, var(--sparkle-a), var(--sparkle-b))" }}
-          >
-            <IconSparkle className="size-[16px] transition-opacity duration-150 group-hover/logo:opacity-0" />
-            <RiSideBarLine className="absolute size-[16px] opacity-0 transition-opacity duration-150 group-hover/logo:opacity-100" />
-          </button>
-          {!collapsed && <span className="font-heading text-[16.5px] font-bold tracking-tight text-text-1">Rechatta</span>}
+          {collapsed ? (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-label="Expand sidebar"
+              className="group/logo relative flex size-[30px] flex-none items-center justify-center rounded-[10px] text-white"
+              style={{ background: "linear-gradient(135deg, var(--sparkle-a), var(--sparkle-b))" }}
+            >
+              <IconSparkle className="size-[16px] transition-opacity duration-150 group-hover/logo:opacity-0" />
+              <RiSideBarLine className="absolute size-[16px] opacity-0 transition-opacity duration-150 group-hover/logo:opacity-100" />
+            </button>
+          ) : (
+            <>
+              <span
+                className="flex size-[30px] flex-none items-center justify-center rounded-[10px] text-white"
+                style={{ background: "linear-gradient(135deg, var(--sparkle-a), var(--sparkle-b))" }}
+              >
+                <IconSparkle className="size-[16px]" />
+              </span>
+              <span className="font-heading text-[16.5px] font-bold tracking-tight text-text-1">Rechatta</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto size-7 text-text-3 hover:text-text-1"
+                onClick={toggleSidebar}
+                aria-label="Collapse sidebar"
+              >
+                <RiSideBarLine className="size-[16px]" />
+              </Button>
+            </>
+          )}
         </div>
       </SidebarHeader>
 
@@ -116,12 +136,7 @@ export function Sidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="New chat" onClick={() => navigate(onNewChat)}>
-              <span
-                className="flex size-6 flex-none items-center justify-center rounded-full text-white"
-                style={{ background: "linear-gradient(135deg, var(--deep-a), var(--deep-c) 55%, var(--deep-b))" }}
-              >
-                <RiChat1Line className="size-[13px]" />
-              </span>
+              <RiEditBoxLine className="size-[18px] flex-none" />
               <span>New chat</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

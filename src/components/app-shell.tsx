@@ -107,7 +107,7 @@ export function AppShell({ user }: { user: AuthUser }) {
   }, []);
 
   return (
-    <div className="relative h-dvh w-full">
+    <div className="relative h-dvh w-full overflow-hidden">
       <SidebarProvider open={!sidebarCollapsed} onOpenChange={(open) => setCollapsed(!open)} className="h-full bg-surface">
         <Sidebar
           onNewChat={startNewChat}

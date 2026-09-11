@@ -416,7 +416,7 @@ export function CenterPanel({
   }
 
   const chatColumn = (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
       <div className="flex items-center justify-between border-b border-border px-4 py-3.5 min-[861px]:hidden">
         <SidebarTrigger className="size-9 text-text-1" />
         <span className="font-heading text-sm font-bold">Rechatta</span>
