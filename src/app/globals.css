@@ -294,25 +294,4 @@ h3 {
     @apply relative z-10 text-white;
   }
 
-  .agent-menu-panel {
-    @apply flex w-[190px] flex-col gap-px rounded-xl border border-border bg-surface p-1.5 shadow-card-hover;
-  }
-  .agent-opt {
-    @apply flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[12.8px] font-semibold text-text-1 transition-colors duration-150 ease-out hover:bg-surface-hover;
-  }
-
-  .thin-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-  .thin-scroll::-webkit-scrollbar {
-    width: 6px;
-  }
-  .thin-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .thin-scroll::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 999px;
-  }
 }

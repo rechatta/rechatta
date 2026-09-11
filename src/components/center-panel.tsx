@@ -30,7 +30,7 @@ import { Card } from "./ui/card";
 import { Spinner } from "./ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
-import { SidebarTrigger } from "./ui/sidebar";
+import { SidebarInset, SidebarTrigger } from "./ui/sidebar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 import { Marker, MarkerIcon, MarkerContent } from "./ui/marker";
 import { ScrollArea } from "./ui/scroll-area";
@@ -563,7 +563,7 @@ export function CenterPanel({
   const showArtifact = mainView === "chat" && openArtifact;
 
   return (
-    <main className="relative flex min-h-0 min-w-0 flex-col bg-surface">
+    <SidebarInset className="relative min-h-0 min-w-0 bg-surface">
       {showArtifact ? (
         <>
           {/* Desktop: side-by-side resizable panels — drag the handle left to
@@ -585,6 +585,6 @@ export function CenterPanel({
       ) : (
         <div className="flex min-h-0 flex-1">{chatColumn}</div>
       )}
-    </main>
+    </SidebarInset>
   );
 }

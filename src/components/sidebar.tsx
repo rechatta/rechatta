@@ -17,6 +17,7 @@ import {
 import { IconSparkle } from "./icons";
 import { Avatar, AvatarFallback, AvatarBadge } from "./ui/avatar";
 import { Skeleton } from "./ui/skeleton";
+import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -130,7 +131,8 @@ export function Sidebar({
         </SidebarMenu>
       </SidebarGroup>
 
-      <SidebarContent className="thin-scroll">
+      <SidebarContent className="overflow-hidden">
+       <ScrollArea className="min-h-0 flex-1">
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -205,6 +207,7 @@ export function Sidebar({
             </SidebarGroup>
           </>
         )}
+       </ScrollArea>
       </SidebarContent>
 
       <SidebarFooter className={collapsed ? "items-center" : ""}>
