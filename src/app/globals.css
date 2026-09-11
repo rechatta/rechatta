@@ -186,6 +186,20 @@
   --font-mono: var(--font-plex-mono);
 }
 
+/* Tailwind v4 dropped v3's implicit "gray-200" default border color — a bare
+   `border` utility (no color suffix) now resolves to `currentColor`, so any
+   shadcn-generated component that uses one (Card, Dialog, DropdownMenu, …)
+   picks up whatever text color happens to be active instead of this app's
+   border token. Restore a sane default here, in the one place that already
+   owns the theming bridge, instead of patching every generated component. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+}
+
 @keyframes drift {
   0%,
   100% {
@@ -318,4 +332,47 @@ h3 {
    content fill the viewport, so nothing else relies on the table sizing. */
 [data-radix-scroll-area-viewport] > div {
   display: block !important;
+}
+
+/* Syntax highlighting for the artifact "Code" tab (prismjs' markup grammar,
+   with embedded <style>/<script> tokenized via its css/javascript grammars).
+   Reuses the chart palette instead of inventing new colors — same
+   CVD-checked hues, and it already carries its own light/dark values. */
+.code-highlight .token.comment,
+.code-highlight .token.prolog,
+.code-highlight .token.doctype,
+.code-highlight .token.cdata {
+  color: var(--text-3);
+  font-style: italic;
+}
+.code-highlight .token.punctuation {
+  color: var(--text-3);
+}
+.code-highlight .token.tag,
+.code-highlight .token.keyword {
+  color: var(--chart-1);
+}
+.code-highlight .token.attr-name,
+.code-highlight .token.property,
+.code-highlight .token.selector {
+  color: var(--chart-2);
+}
+.code-highlight .token.attr-value,
+.code-highlight .token.string,
+.code-highlight .token.url {
+  color: var(--chart-3);
+}
+.code-highlight .token.number,
+.code-highlight .token.boolean,
+.code-highlight .token.important,
+.code-highlight .token.atrule {
+  color: var(--chart-4);
+}
+.code-highlight .token.function,
+.code-highlight .token.class-name {
+  color: var(--chart-5);
+}
+.code-highlight .token.operator,
+.code-highlight .token.entity {
+  color: var(--text-2);
 }

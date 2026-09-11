@@ -269,8 +269,8 @@ export function Sidebar({
     <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
       <DialogContent className="max-w-[380px]">
         <DialogHeader>
-          <DialogTitle>Delete chat?</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-[16px] font-bold text-text-1">Delete chat?</DialogTitle>
+          <DialogDescription className="text-[13px] text-text-2">
             &ldquo;{deleteTarget?.title}&rdquo; will be permanently deleted. This can&rsquo;t be undone.
           </DialogDescription>
         </DialogHeader>

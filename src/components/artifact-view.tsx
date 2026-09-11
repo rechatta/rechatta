@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import Prism from "prismjs";
+import "prismjs/components/prism-clike";
+import "prismjs/components/prism-css";
+import "prismjs/components/prism-javascript";
+import "prismjs/components/prism-markup";
 import type { Artifact, ChartData, QuizData } from "@/lib/mock-data";
 import { IconCopy, IconCheck } from "./icons";
 import { RiCloseLine, RiDownloadLine } from "@remixicon/react";
@@ -142,6 +147,11 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"preview" | "code">("preview");
 
+  const highlightedCode = useMemo(
+    () => (artifact.kind === "html" ? Prism.highlight(artifact.content, Prism.languages.markup, "markup") : ""),
+    [artifact.kind, artifact.content]
+  );
+
   function copy() {
     navigator.clipboard.writeText(artifact.content);
     setCopied(true);
@@ -236,8 +246,8 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
             {/* No horizontal scroll inside the artifact — the panel itself
                 expands (drag its left edge) for long lines instead of a nested
                 x-scrollbar, so code wraps rather than overflowing sideways. */}
-            <pre className="whitespace-pre-wrap break-words px-5 py-4 font-mono text-[12.5px] leading-relaxed text-text-1">
-              <code>{artifact.content}</code>
+            <pre className="code-highlight whitespace-pre-wrap break-words px-5 py-4 font-mono text-[12.5px] leading-relaxed text-text-1">
+              <code dangerouslySetInnerHTML={{ __html: highlightedCode }} />
             </pre>
           </ScrollArea>
         </TabsContent>
