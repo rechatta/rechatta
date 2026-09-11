@@ -13,6 +13,7 @@ import {
   RiStarFill,
   RiDeleteBin6Line,
   RiLogoutBoxRLine,
+  RiSideBarLine,
 } from "@remixicon/react";
 import { IconSparkle } from "./icons";
 import { Avatar, AvatarFallback, AvatarBadge } from "./ui/avatar";
@@ -44,7 +45,6 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from "./ui/sidebar";
 import { signOut } from "@/app/auth/actions";
@@ -83,7 +83,7 @@ export function Sidebar({
 }) {
   const [active, setActive] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ChatSessionSummary | null>(null);
-  const { state, setOpenMobile } = useSidebar();
+  const { state, setOpenMobile, toggleSidebar } = useSidebar();
   const collapsed = state === "collapsed";
 
   // Every nav action also dismisses the mobile Sheet drawer — Sidebar's own
@@ -98,14 +98,17 @@ export function Sidebar({
     <ShadcnSidebar collapsible="icon" className="border-border">
       <SidebarHeader className="gap-0 px-2 pb-2.5 pt-2">
         <div className={`flex items-center gap-2.5 px-1.5 py-1 ${collapsed ? "flex-col gap-2" : ""}`}>
-          <span
-            className="flex size-[30px] flex-none items-center justify-center rounded-[10px] text-white"
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="group/logo relative flex size-[30px] flex-none items-center justify-center rounded-[10px] text-white"
             style={{ background: "linear-gradient(135deg, var(--sparkle-a), var(--sparkle-b))" }}
           >
-            <IconSparkle className="size-[16px]" />
-          </span>
+            <IconSparkle className="size-[16px] transition-opacity duration-150 group-hover/logo:opacity-0" />
+            <RiSideBarLine className="absolute size-[16px] opacity-0 transition-opacity duration-150 group-hover/logo:opacity-100" />
+          </button>
           {!collapsed && <span className="font-heading text-[16.5px] font-bold tracking-tight text-text-1">Rechatta</span>}
-          <SidebarTrigger className={`text-text-3 hover:text-text-1 ${collapsed ? "" : "ml-auto"}`} />
         </div>
       </SidebarHeader>
 
@@ -225,7 +228,7 @@ export function Sidebar({
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-[220px] rounded-xl p-1.5">
+          <DropdownMenuContent side="right" align="end" sideOffset={8} className="w-[220px] rounded-xl p-1.5">
             <div className="truncate px-2.5 py-2 text-[12px] text-text-3">{user.email}</div>
             <form action={signOut} className="w-full">
               <DropdownMenuItem asChild>

@@ -271,7 +271,7 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
           // mount — Radix ScrollArea's viewport (display:table internally)
           // reports 0x0 at that point, so charts get a plain scroll div
           // instead, sidestepping the mismeasure.
-          <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
+          <div className="thin-scroll min-h-0 flex-1 overflow-auto px-5 py-4">
             <ChartView data={parsed as ChartData} />
           </div>
         )}

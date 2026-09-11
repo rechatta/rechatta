@@ -3,18 +3,6 @@
 import { cn } from "cn"
 import * as ResizablePrimitive from "react-resizable-panels"
 
-// No remix-icon grip-dots equivalent — a tiny inline SVG instead of pulling
-// in lucide-react for one icon.
-function GripVerticalIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 6 10" fill="currentColor" className={className}>
-      {[1, 5].map((x) =>
-        [1, 5, 9].map((y) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1" />)
-      )}
-    </svg>
-  )
-}
-
 function ResizablePanelGroup({
   className,
   ...props
@@ -51,11 +39,7 @@ function ResizableHandle({
       )}
       {...props}
     >
-      {withHandle && (
-        <div className="z-10 flex h-4 w-3 items-center justify-center rounded-xs border bg-border">
-          <GripVerticalIcon className="size-2.5" />
-        </div>
-      )}
+      {withHandle && <div className="z-10 h-8 w-1.5 shrink-0 rounded-full bg-border" />}
     </ResizablePrimitive.Separator>
   )
 }

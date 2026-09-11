@@ -294,4 +294,28 @@ h3 {
     @apply relative z-10 text-white;
   }
 
+  .thin-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .thin-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .thin-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .thin-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+  }
+}
+
+/* Radix ScrollArea's Viewport wraps children in an internal div forced to
+   `display:table; min-width:100%` (inline styles) so wide content isn't
+   clipped — but that also lets `white-space:nowrap` text (e.g. truncated
+   sidebar labels) grow the box past its container instead of truncating.
+   Force it back to a normal block box; min-width:100% already makes narrow
+   content fill the viewport, so nothing else relies on the table sizing. */
+[data-radix-scroll-area-viewport] > div {
+  display: block !important;
 }

@@ -133,7 +133,7 @@ function WelcomeView({ name }: { name: string }) {
         {quickActions.map(({ icon: Icon, title, desc }) => (
           <Card
             key={title}
-            className="gap-0 rounded-[26px] border-border p-4.5 py-0 shadow-card transition hover:-translate-y-0.5 hover:border-border-soft hover:shadow-card-hover"
+            className="gap-0 rounded-[26px] border-border p-4.5 shadow-card transition hover:-translate-y-0.5 hover:border-border-soft hover:shadow-card-hover"
           >
             <div className="mb-3 flex size-10 items-center justify-center rounded-2xl bg-surface-inset text-text-1">
               <Icon className="size-[19px]" />
@@ -159,12 +159,14 @@ function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpe
   return (
     <div className="[animation:fade-in_0.2s_ease-out_both]">
       {agent && badgeColors && (
-        <Badge
-          className="mb-1.5 rounded-full border-transparent font-semibold"
-          style={{ background: badgeColors.bg, color: badgeColors.fg }}
-        >
-          {agent.name} agent
-        </Badge>
+        <div className="mb-1.5">
+          <Badge
+            className="rounded-full border-transparent font-semibold"
+            style={{ background: badgeColors.bg, color: badgeColors.fg }}
+          >
+            {agent.name} agent
+          </Badge>
+        </div>
       )}
       {message.pendingTool && (
         <Marker className="mb-1.5 w-auto text-[12.5px]">
@@ -427,9 +429,10 @@ export function CenterPanel({
         <StudioView />
       ) : (
         <div className="relative min-h-0 flex-1">
-          {/* Fades content approaching the header/mobile-bar edge instead of
+          {/* Fades content approaching the header/composer edges instead of
               the hard clip a plain overflow container leaves. */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-surface to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-surface to-transparent" />
           <ScrollArea className="h-full">
             <div className="flex min-h-0 flex-col items-center px-8 pb-4 pt-9">
               {displayMessages.length > 0 ? (
@@ -477,7 +480,7 @@ export function CenterPanel({
               onChange={handleInput}
               onKeyDown={handleKeyDown}
               placeholder="Ask anything, or type @ to bring in an agent..."
-              className="min-h-6 max-h-[120px] flex-1 resize-none border-none bg-transparent text-[14.5px] text-text-1 outline-none placeholder:text-text-3"
+              className="thin-scroll min-h-6 max-h-[120px] flex-1 resize-none border-none bg-transparent text-[14.5px] text-text-1 outline-none placeholder:text-text-3"
             />
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -543,7 +546,7 @@ export function CenterPanel({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="orb size-8.5 hover:bg-transparent disabled:opacity-40"
+                  className="orb size-8.5 rounded-full hover:bg-transparent disabled:opacity-40"
                   aria-label="Send message"
                   onClick={submit}
                   disabled={isBusy || uploading || (!value.trim() && attachments.length === 0)}
