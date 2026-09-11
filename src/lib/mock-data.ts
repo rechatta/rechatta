@@ -16,7 +16,7 @@ export const agentBadgeColors: Record<Exclude<AgentKey, "auto">, { fg: string; b
 };
 
 const artifactGuidance =
-  "When your answer is a document rather than a quick reply (a written draft, a summary, a report, a study guide), call createArtifact with kind \"markdown\" instead of writing it inline — keep your chat reply to one short sentence and let the artifact hold the long-form content. When the user asks for a webpage, landing page, UI mockup, or any HTML/CSS/JS design, call createArtifact with kind \"html\" and put the full self-contained HTML document (inline <style>/<script>, no external requests) in content — never paste it as a fenced code block in chat, and don't use kind \"markdown\" for it. The artifact is already rendered for the user right below your reply, so never write a download link, a file path, or any \"sandbox:\" reference in your chat text — just say something like \"Here's the draft.\"";
+  "When your answer is a document rather than a quick reply (a written draft, a summary, a report, a study guide), call createArtifact with kind \"markdown\" instead of writing it inline — keep your chat reply to one short sentence and let the artifact hold the long-form content. When the user asks for a webpage, landing page, UI mockup, or any HTML/CSS/JS design, call createArtifact with kind \"html\" and put the full self-contained HTML document (inline <style>/<script>, no external requests) in content — never paste it as a fenced code block in chat, and don't use kind \"markdown\" for it. When the user asks for a quiz, test, or practice questions, call createArtifact with kind \"quiz\" and put a JSON string (not markdown, not prose) in content shaped exactly as {\"questions\":[{\"question\":string,\"options\":string[],\"correctIndex\":number,\"explanation\"?:string}]}. When the user asks for a chart, graph, or plot of some data (including turning a runCode/tabular result into a visual), call createArtifact with kind \"chart\" and put a JSON string in content shaped exactly as {\"type\":\"bar\"|\"line\",\"data\":Record<string,string|number>[],\"xKey\":string,\"series\":{\"key\":string,\"label\":string}[]} — one object per data point, xKey naming the category/x-axis field, series naming each numeric field to plot. The artifact is already rendered for the user right below your reply, so never write a download link, a file path, or any \"sandbox:\" reference in your chat text — just say something like \"Here's the draft.\"";
 
 const runCodeGuidance =
   "You have a runCode tool that executes Python in a sandbox (pandas/numpy/matplotlib available) — use it for any real calculation, data analysis, or computing over a tabular file (csv, xlsx) instead of reasoning through numbers yourself. A message may include a line like \"[Attached file: report.csv]\" — pass that exact filename as runCode's fileName argument, then read it in your code from /home/user/report.csv. For reading or summarizing a prose document (pdf, docx, txt) instead of computing over tabular data, use readDocument instead.";
@@ -46,8 +46,21 @@ export const agentTools: Record<AgentKey, string[]> = {
 
 export type Source = { icon: "wrench" | "link"; label: string };
 
-export type ArtifactKind = "markdown" | "html";
+export type ArtifactKind = "markdown" | "html" | "quiz" | "chart";
 export type Artifact = { kind: ArtifactKind; title: string; content: string };
+
+// content JSON shapes for the two structured-data kinds — the tool output and
+// stored artifact both keep content as a plain string (same {kind,title,content}
+// shape as markdown/html), parsed only where these two kinds are rendered.
+export type QuizData = {
+  questions: { question: string; options: string[]; correctIndex: number; explanation?: string }[];
+};
+export type ChartData = {
+  type: "bar" | "line";
+  data: Record<string, string | number>[];
+  xKey: string;
+  series: { key: string; label: string }[];
+};
 
 // path is the permanent Supabase Storage object path ("{user_id}/{session_id}/...") —
 // this is what runCode re-fetches a file by on a later turn, not the filename.

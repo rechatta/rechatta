@@ -1,10 +1,17 @@
 "use client";
 
 import type { Artifact } from "@/lib/mock-data";
-import { RiFileTextLine, RiCodeSSlashLine } from "@remixicon/react";
+import { RiFileTextLine, RiCodeSSlashLine, RiQuestionLine, RiBarChartBoxLine } from "@remixicon/react";
+
+const iconByKind = {
+  html: RiCodeSSlashLine,
+  quiz: RiQuestionLine,
+  chart: RiBarChartBoxLine,
+  markdown: RiFileTextLine,
+} as const;
 
 export function ArtifactChip({ artifact, onOpen }: { artifact: Artifact; onOpen: () => void }) {
-  const Icon = artifact.kind === "html" ? RiCodeSSlashLine : RiFileTextLine;
+  const Icon = iconByKind[artifact.kind];
   return (
     <button
       onClick={onOpen}
