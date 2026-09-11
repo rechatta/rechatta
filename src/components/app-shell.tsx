@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { toast } from "sonner";
 import { Sidebar } from "./sidebar";
 import { CenterPanel } from "./center-panel";
 import { CommandPalette } from "./command-palette";
@@ -85,17 +86,17 @@ export function AppShell({ user }: { user: AuthUser }) {
   }
 
   async function deleteSession(id: string) {
+    const title = sessions.find((s) => s.id === id)?.title ?? "Chat";
     setSessions((prev) => prev.filter((s) => s.id !== id));
     if (id === activeSessionId) startNewChat();
     await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+    toast.success(`"${title}" deleted`);
   }
 
+  // Escape-to-close is handled by Dialog itself now; only the cmd/ctrl+K
+  // toggle still needs a global listener.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setSettingsOpen(false);
-        setPaletteOpen(false);
-      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen((v) => !v);

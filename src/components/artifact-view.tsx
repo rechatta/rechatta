@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import type { Artifact, ChartData, QuizData } from "@/lib/mock-data";
 import { IconCopy, IconCheck } from "./icons";
@@ -145,6 +146,7 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
     navigator.clipboard.writeText(artifact.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+    toast.success("Copied to clipboard");
   }
 
   function download() {
@@ -159,6 +161,7 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
+    toast.success("Download started");
   }
 
   const actions = (

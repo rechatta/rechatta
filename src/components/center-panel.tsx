@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -148,6 +149,10 @@ function WelcomeView({ name }: { name: string }) {
 
 function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpenArtifact: (artifact: Artifact) => void }) {
   const [feedback, setFeedback] = useState<"up" | "down" | null>(null);
+  function copy() {
+    navigator.clipboard.writeText(message.content);
+    toast.success("Copied to clipboard");
+  }
   const agent = agents.find((a) => a.key === message.agent);
   const badgeColors = message.agent && message.agent !== "auto" ? agentBadgeColors[message.agent] : undefined;
 
@@ -188,7 +193,7 @@ function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpe
       <div className="mt-2 flex items-center gap-0.5">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1">
+            <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={copy}>
               <IconCopy className="size-[15px]" />
             </Button>
           </TooltipTrigger>
@@ -335,7 +340,10 @@ export function CenterPanel({
   const isBusy = status === "submitted" || status === "streaming";
 
   useEffect(() => {
-    if (error?.message === "Unauthorized") router.replace("/login");
+    if (error?.message === "Unauthorized") {
+      toast.error("Your session expired. Please sign in again.");
+      router.replace("/login");
+    }
   }, [error, router]);
 
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
@@ -362,6 +370,8 @@ export function CenterPanel({
           return (await res.json()) as AttachmentPointer;
         })
       );
+      const failed = uploaded.filter((p) => p === null).length;
+      if (failed > 0) toast.error(failed === 1 ? "Failed to upload 1 file" : `Failed to upload ${failed} files`);
       setAttachments((prev) => [...prev, ...uploaded.filter((p): p is AttachmentPointer => p !== null)]);
     } finally {
       setUploading(false);

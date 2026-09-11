@@ -17,6 +17,15 @@ import {
 import { IconSparkle } from "./icons";
 import { Avatar, AvatarFallback, AvatarBadge } from "./ui/avatar";
 import { Skeleton } from "./ui/skeleton";
+import { Button } from "./ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,6 +81,7 @@ export function Sidebar({
   user: AuthUser;
 }) {
   const [active, setActive] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<ChatSessionSummary | null>(null);
   const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -83,6 +93,7 @@ export function Sidebar({
   }
 
   return (
+    <>
     <ShadcnSidebar collapsible="icon" className="border-border">
       <SidebarHeader className="gap-0 px-2 pb-2.5 pt-2">
         <div className={`flex items-center gap-2.5 px-1.5 py-1 ${collapsed ? "flex-col gap-2" : ""}`}>
@@ -164,7 +175,7 @@ export function Sidebar({
                         isActive={session.id === activeSessionId}
                         onSelect={() => navigate(() => onSelectSession(session.id))}
                         onToggleFavorite={onToggleFavorite}
-                        onDelete={onDeleteSession}
+                        onDelete={setDeleteTarget}
                       />
                     ))}
                 </SidebarMenu>
@@ -187,7 +198,7 @@ export function Sidebar({
                       isActive={session.id === activeSessionId}
                       onSelect={() => navigate(() => onSelectSession(session.id))}
                       onToggleFavorite={onToggleFavorite}
-                      onDelete={onDeleteSession}
+                      onDelete={setDeleteTarget}
                     />
                   ))}
               </SidebarMenu>
@@ -233,6 +244,32 @@ export function Sidebar({
         )}
       </SidebarFooter>
     </ShadcnSidebar>
+
+    <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      <DialogContent className="max-w-[380px]">
+        <DialogHeader>
+          <DialogTitle>Delete chat?</DialogTitle>
+          <DialogDescription>
+            &ldquo;{deleteTarget?.title}&rdquo; will be permanently deleted. This can&rsquo;t be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (deleteTarget) onDeleteSession(deleteTarget.id);
+              setDeleteTarget(null);
+            }}
+          >
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 
@@ -247,7 +284,7 @@ function ChatRow({
   isActive: boolean;
   onSelect: () => void;
   onToggleFavorite: (id: string, favorite: boolean) => void;
-  onDelete: (id: string) => void;
+  onDelete: (session: ChatSessionSummary) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -279,7 +316,7 @@ function ChatRow({
             )}
             {session.favorite ? "Remove favorite" : "Add to favorites"}
           </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={() => onDelete(session.id)}>
+          <DropdownMenuItem variant="destructive" onClick={() => onDelete(session)}>
             <RiDeleteBin6Line className="size-[15px] flex-none" />
             Delete
           </DropdownMenuItem>

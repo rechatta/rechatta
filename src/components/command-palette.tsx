@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RiSearchLine, RiChat1Line } from "@remixicon/react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog";
 import type { ChatSessionSummary } from "@/lib/chat-sessions";
 
 export function CommandPalette({
@@ -31,14 +32,13 @@ export function CommandPalette({
   );
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-start justify-center bg-[rgba(15,15,18,0.4)] px-4 pt-[14vh]"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-[540px] overflow-hidden rounded-[22px] border border-border-soft bg-surface shadow-card-hover [animation:pop-in_0.2s_cubic-bezier(0.16,1,0.3,1)_both]"
-        onClick={(e) => e.stopPropagation()}
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        showCloseButton={false}
+        className="top-[22vh] max-w-[540px] translate-y-0 gap-0 overflow-hidden rounded-[22px] border-border-soft bg-surface p-0 shadow-card-hover"
       >
+        <DialogTitle className="sr-only">Command palette</DialogTitle>
+        <DialogDescription className="sr-only">Search chats or start a new one.</DialogDescription>
         <div className="flex items-center gap-2.5 border-b border-border px-4 py-3.5">
           <RiSearchLine className="size-[18px] flex-none text-text-3" />
           <input
@@ -99,7 +99,7 @@ export function CommandPalette({
             <p className="px-2.5 py-3 text-center text-[12.8px] text-text-3">No chats match &ldquo;{query}&rdquo;</p>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
