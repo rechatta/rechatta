@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sora, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Sora, Geist, IBM_Plex_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -10,10 +10,10 @@ const sora = Sora({
   weight: ["500", "600", "700", "800"],
 });
 
-const jakarta = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: "variable",
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -31,7 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${sora.variable} ${jakarta.variable} ${plexMono.variable}`}
+      className={`${sora.variable} ${geist.variable} ${plexMono.variable}`}
     >
       <body>
         <TooltipProvider delayDuration={300}>{children}</TooltipProvider>

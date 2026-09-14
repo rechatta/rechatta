@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "shadcn/tailwind.css";
+@import "katex/dist/katex.min.css";
 @import "./typeset.css";
 
 :root {
@@ -181,7 +183,7 @@
   --shadow-orb-glow: var(--shadow-orb-glow);
   --shadow-deep-glow: var(--shadow-deep-glow);
 
-  --font-sans: var(--font-jakarta);
+  --font-sans: var(--font-geist);
   --font-heading: var(--font-sora);
   --font-mono: var(--font-plex-mono);
 }

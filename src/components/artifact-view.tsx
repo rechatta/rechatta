@@ -1,13 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
-import Prism from "prismjs";
-import "prismjs/components/prism-clike";
-import "prismjs/components/prism-css";
-import "prismjs/components/prism-javascript";
-import "prismjs/components/prism-markup";
+import { Markdown } from "./markdown";
 import type { Artifact, ChartData, QuizData } from "@/lib/mock-data";
 import { IconCopy, IconCheck } from "./icons";
 import { RiCloseLine, RiDownloadLine } from "@remixicon/react";
@@ -147,10 +142,22 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState<"preview" | "code">("preview");
 
-  const highlightedCode = useMemo(
-    () => (artifact.kind === "html" ? Prism.highlight(artifact.content, Prism.languages.markup, "markup") : ""),
-    [artifact.kind, artifact.content]
-  );
+  const [highlightedCode, setHighlightedCode] = useState("");
+
+  useEffect(() => {
+    if (artifact.kind !== "html") return;
+    let cancelled = false;
+    // Sequential dynamic imports guarantee prismjs's global-registration side
+    // effect runs before the language component reads it, regardless of
+    // bundler import ordering.
+    import("prismjs").then(async ({ default: Prism }) => {
+      await import("prismjs/components/prism-markup");
+      if (!cancelled) setHighlightedCode(Prism.highlight(artifact.content, Prism.languages.markup, "markup"));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [artifact.kind, artifact.content]);
 
   function copy() {
     navigator.clipboard.writeText(artifact.content);
@@ -297,7 +304,7 @@ export function ArtifactView({ artifact, onClose }: { artifact: Artifact; onClos
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <div className="artifact-prose px-5 py-4">
-          <ReactMarkdown>{artifact.content}</ReactMarkdown>
+          <Markdown>{artifact.content}</Markdown>
         </div>
       </ScrollArea>
     </div>

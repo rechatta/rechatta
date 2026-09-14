@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { DefaultChatTransport, type UIMessage } from "ai";
@@ -23,9 +23,9 @@ import { agents, agentBadgeColors, type AgentKey, type Artifact, type Attachment
 import type { StoredMessage } from "@/lib/chat-sessions";
 import { ArtifactView } from "./artifact-view";
 import { ArtifactChip } from "./artifact-chip";
+import { Markdown } from "./markdown";
 import { StudioView } from "./studio-view";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import { Card } from "./ui/card";
 import { Spinner } from "./ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -33,7 +33,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { SidebarInset, SidebarTrigger } from "./ui/sidebar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 import { Marker, MarkerIcon, MarkerContent } from "./ui/marker";
-import { ScrollArea } from "./ui/scroll-area";
+import {
+  MessageScrollerProvider,
+  MessageScroller,
+  MessageScrollerViewport,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerButton,
+} from "./ui/message-scroller";
+import { Message as MessageRow, MessageContent, MessageHeader, MessageFooter } from "./ui/message";
+import { Bubble, BubbleContent } from "./ui/bubble";
 import {
   Attachment,
   AttachmentMedia,
@@ -157,136 +166,144 @@ function AssistantMessage({ message, onOpenArtifact }: { message: Message; onOpe
   const badgeColors = message.agent && message.agent !== "auto" ? agentBadgeColors[message.agent] : undefined;
 
   return (
-    <div className="[animation:fade-in_0.2s_ease-out_both]">
-      {agent && badgeColors && (
-        <div className="mb-1.5">
-          <Badge
-            className="rounded-full border-transparent font-semibold"
-            style={{ background: badgeColors.bg, color: badgeColors.fg }}
-          >
+    <MessageRow className="[animation:fade-in_0.2s_ease-out_both]">
+      <MessageContent>
+        {agent && badgeColors && (
+          <MessageHeader className="gap-1.5">
+            <span className="size-1.5 flex-none rounded-full" style={{ background: badgeColors.fg }} />
             {agent.name} agent
-          </Badge>
-        </div>
-      )}
-      {message.pendingTool && (
-        <Marker className="mb-1.5 w-auto text-[12.5px]">
-          <MarkerIcon>
-            <span className="block size-1.5 animate-pulse rounded-full bg-sparkle-a" />
-          </MarkerIcon>
-          <MarkerContent>
-            {message.pendingTool === "webSearch"
-              ? "Searching the web…"
-              : message.pendingTool === "runCode"
-                ? "Running code…"
-                : message.pendingTool === "readDocument"
-                  ? "Reading document…"
-                  : "Working…"}
-          </MarkerContent>
-        </Marker>
-      )}
-      {message.content && (
-        <div className="inline-block max-w-[80%] min-w-0 [overflow-wrap:anywhere] rounded-2xl rounded-bl-md bg-surface-inset px-3.5 py-2.5 text-[13.8px] leading-relaxed text-text-1">
-          {message.content}
-        </div>
-      )}
-      {message.artifacts?.map((artifact, i) => (
-        <ArtifactChip key={i} artifact={artifact} onOpen={() => onOpenArtifact(artifact)} />
-      ))}
-      <div className="mt-2 flex items-center gap-0.5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon-sm" className="size-7 rounded-lg text-text-3 hover:text-text-1" onClick={copy}>
-              <IconCopy className="size-[15px]" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Copy response</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className={`size-7 rounded-lg hover:text-text-1 ${feedback === "up" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
-              onClick={() => setFeedback((f) => (f === "up" ? null : "up"))}
-            >
-              <IconThumbsUp className="size-[15px]" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Good response</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className={`size-7 rounded-lg hover:text-text-1 ${feedback === "down" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
-              onClick={() => setFeedback((f) => (f === "down" ? null : "down"))}
-            >
-              <IconThumbsDown className="size-[15px]" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Bad response</TooltipContent>
-        </Tooltip>
-        <span className="flex-1" />
-        {agent && message.sources && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 pl-2 text-[11.5px] font-semibold text-text-2 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1">
-                {message.sources.length} sources
-                <IconChevron className="size-[15px]" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="end" className="w-[270px] rounded-xl p-2.5">
-              <div className="px-1 pb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-text-3">Tools used</div>
-              {message.sources.map((source) => {
-                const Icon = source.icon === "link" ? IconLink : IconWrench;
-                return (
-                  <div key={source.label} className="flex items-start gap-2 px-1 py-1.5 text-[12.2px] leading-snug text-text-2">
-                    <Icon className="mt-px size-[15px] flex-none text-text-3" />
-                    {source.label}
-                  </div>
-                );
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          </MessageHeader>
         )}
-      </div>
-    </div>
+        {message.pendingTool && (
+          <Marker role="status" className="px-3">
+            <MarkerIcon>
+              <Spinner className="size-3.5" />
+            </MarkerIcon>
+            <MarkerContent className="shimmer">
+              {message.pendingTool === "webSearch"
+                ? "Searching the web…"
+                : message.pendingTool === "runCode"
+                  ? "Running code…"
+                  : message.pendingTool === "readDocument"
+                    ? "Reading document…"
+                    : "Working…"}
+            </MarkerContent>
+          </Marker>
+        )}
+        {message.content && (
+          <Bubble variant="secondary">
+            <BubbleContent className="chat-prose">
+              <Markdown linkVariant="citation">{message.content}</Markdown>
+            </BubbleContent>
+          </Bubble>
+        )}
+        {message.artifacts?.map((artifact, i) => (
+          <ArtifactChip key={i} artifact={artifact} onOpen={() => onOpenArtifact(artifact)} />
+        ))}
+        <MessageFooter className="gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="rounded-full text-text-3 hover:text-text-1" onClick={copy} aria-label="Copy response">
+                <IconCopy />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Copy response</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className={`rounded-full hover:text-text-1 ${feedback === "up" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
+                onClick={() => setFeedback((f) => (f === "up" ? null : "up"))}
+                aria-label="Good response"
+              >
+                <IconThumbsUp />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Good response</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className={`rounded-full hover:text-text-1 ${feedback === "down" ? "bg-surface-inset text-text-1" : "text-text-3"}`}
+                onClick={() => setFeedback((f) => (f === "down" ? null : "down"))}
+                aria-label="Bad response"
+              >
+                <IconThumbsDown />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Bad response</TooltipContent>
+          </Tooltip>
+          <span className="flex-1" />
+          {agent && message.sources && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1.5 pl-2 text-xs font-medium text-text-2 transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-text-1">
+                  {message.sources.length} sources
+                  <IconChevron className="size-[15px]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="end" className="w-[270px] rounded-xl p-2.5">
+                <div className="px-1 pb-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-text-3">Tools used</div>
+                {message.sources.map((source) => {
+                  const Icon = source.icon === "link" ? IconLink : IconWrench;
+                  return (
+                    <div key={source.label} className="flex items-start gap-2 px-1 py-1.5 text-xs leading-snug text-text-2">
+                      <Icon className="mt-px size-[15px] flex-none text-text-3" />
+                      {source.label}
+                    </div>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </MessageFooter>
+      </MessageContent>
+    </MessageRow>
   );
 }
 
 function ThreadView({ messages, onOpenArtifact }: { messages: Message[]; onOpenArtifact: (artifact: Artifact) => void }) {
   return (
-    <div className="flex w-full max-w-[720px] flex-col gap-4">
+    <>
       {messages.map((message, i) =>
         message.role === "user" ? (
-          <div key={i} className="flex flex-col items-end gap-1.5 [animation:fade-in_0.2s_ease-out_both]">
-            {message.files && message.files.length > 0 && (
-              <AttachmentGroup className="max-w-[80%] justify-end">
-                {message.files.map((f, j) => (
-                  <Attachment key={j} size="sm">
-                    <AttachmentMedia>
-                      <RiFileLine className="size-[14px]" />
-                    </AttachmentMedia>
-                    <AttachmentContent>
-                      <AttachmentTitle className="max-w-[160px] truncate">{f.name}</AttachmentTitle>
-                      <AttachmentDescription>{formatFileSize(f.size)}</AttachmentDescription>
-                    </AttachmentContent>
-                  </Attachment>
-                ))}
-              </AttachmentGroup>
-            )}
-            {message.content && (
-              <div className="max-w-[80%] min-w-0 [overflow-wrap:anywhere] rounded-2xl rounded-br-md bg-surface-inset px-3.5 py-2.5 text-[13.8px]">
-                {message.content}
-              </div>
-            )}
-          </div>
+          <MessageScrollerItem key={i} messageId={`message-${i}`} scrollAnchor>
+            <MessageRow align="end" className="[animation:fade-in_0.2s_ease-out_both]">
+              <MessageContent>
+                {message.files && message.files.length > 0 && (
+                  <AttachmentGroup className="max-w-[80%] justify-end self-end">
+                    {message.files.map((f, j) => (
+                      <Attachment key={j} size="sm">
+                        <AttachmentMedia>
+                          <RiFileLine className="size-[14px]" />
+                        </AttachmentMedia>
+                        <AttachmentContent>
+                          <AttachmentTitle className="max-w-[160px] truncate">{f.name}</AttachmentTitle>
+                          <AttachmentDescription>{formatFileSize(f.size)}</AttachmentDescription>
+                        </AttachmentContent>
+                      </Attachment>
+                    ))}
+                  </AttachmentGroup>
+                )}
+                {message.content && (
+                  <Bubble variant="secondary" align="end">
+                    <BubbleContent>{message.content}</BubbleContent>
+                  </Bubble>
+                )}
+              </MessageContent>
+            </MessageRow>
+          </MessageScrollerItem>
         ) : (
-          <AssistantMessage key={i} message={message} onOpenArtifact={onOpenArtifact} />
+          <MessageScrollerItem key={i} messageId={`message-${i}`}>
+            <AssistantMessage message={message} onOpenArtifact={onOpenArtifact} />
+          </MessageScrollerItem>
         )
       )}
-    </div>
+    </>
   );
 }
 
@@ -316,6 +333,12 @@ export function CenterPanel({
   const [uploading, setUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  // The composer floats over the message list instead of sitting in normal
+  // flow below it, so the scroller needs its real height as bottom padding —
+  // measured live since it varies with attachments, the error banner, and the
+  // textarea growing up to 120px.
+  const [composerHeight, setComposerHeight] = useState(96);
 
   const router = useRouter();
   const selectedAgent = agents.find((a) => a.key === agentKey)!;
@@ -347,6 +370,15 @@ export function CenterPanel({
       router.replace("/login");
     }
   }, [error, router]);
+
+  useLayoutEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    setComposerHeight(el.getBoundingClientRect().height);
+    const observer = new ResizeObserver(([entry]) => setComposerHeight(entry.contentRect.height));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [mainView]);
 
   function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setValue(e.target.value);
@@ -429,28 +461,41 @@ export function CenterPanel({
         <StudioView />
       ) : (
         <div className="relative min-h-0 flex-1">
-          {/* Fades content approaching the header/composer edges instead of
-              the hard clip a plain overflow container leaves. */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-surface to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-8 bg-gradient-to-t from-surface to-transparent" />
-          <ScrollArea className="h-full">
-            <div className="flex min-h-0 flex-col items-center px-8 pb-4 pt-9">
-              {displayMessages.length > 0 ? (
-                <ThreadView messages={displayMessages} onOpenArtifact={setOpenArtifact} />
-              ) : (
-                <WelcomeView name={user.name} />
-              )}
+          {displayMessages.length > 0 ? (
+            // key resets scroll/anchor state when switching sessions, so the
+            // newly loaded transcript re-applies defaultScrollPosition instead
+            // of inheriting the previous session's scroll tracking.
+            <MessageScrollerProvider key={sessionId} autoScroll defaultScrollPosition="last-anchor">
+              <MessageScroller className="h-full">
+                <MessageScrollerViewport>
+                  {/* Bottom padding reserves room for the composer, which
+                      floats over this viewport instead of sitting below it —
+                      so the last message can scroll clear of it, and the
+                      scroll-fade dissolves toward the true bottom edge of the
+                      panel instead of stopping at a hard boundary above a
+                      separate input row. */}
+                  <MessageScrollerContent
+                    className="mx-auto w-full max-w-[720px] gap-4 px-8 pt-9"
+                    style={{ paddingBottom: composerHeight + 24 }}
+                  >
+                    <ThreadView messages={displayMessages} onOpenArtifact={setOpenArtifact} />
+                  </MessageScrollerContent>
+                </MessageScrollerViewport>
+                <MessageScrollerButton style={{ bottom: composerHeight + 16 }} />
+              </MessageScroller>
+            </MessageScrollerProvider>
+          ) : (
+            <div className="flex h-full flex-col items-center px-8 pt-9" style={{ paddingBottom: composerHeight }}>
+              <WelcomeView name={user.name} />
             </div>
-          </ScrollArea>
-        </div>
-      )}
+          )}
 
-      {mainView === "chat" && (
-      <div className="flex-none px-8 pb-6 pt-4.5">
-        {error && error.message !== "Unauthorized" && (
-          <p className="mx-auto mb-2 max-w-[720px] text-center text-[12.5px] text-red-500">{error.message}</p>
-        )}
-        <div className="mx-auto max-w-[720px] rounded-[22px] border border-border bg-surface px-3.5 pb-2.5 pt-3 shadow-card">
+          {mainView === "chat" && (
+          <div ref={composerRef} className="absolute inset-x-0 bottom-0 px-8 pb-6 pt-4.5">
+            {error && error.message !== "Unauthorized" && (
+              <p className="mx-auto mb-2 max-w-[720px] text-center text-[12.5px] text-red-500">{error.message}</p>
+            )}
+            <div className="mx-auto max-w-[720px] rounded-[22px] border border-border bg-surface px-3.5 pb-2.5 pt-3 shadow-card">
           {attachments.length > 0 && (
             <AttachmentGroup className="mb-2.5">
               {attachments.map((a) => (
@@ -560,6 +605,8 @@ export function CenterPanel({
         </div>
       </div>
       )}
+        </div>
+      )}
     </div>
   );
 
@@ -573,9 +620,29 @@ export function CenterPanel({
               grow the artifact panel, same direction as before. */}
           <ResizablePanelGroup orientation="horizontal" className="hidden min-h-0 flex-1 min-[861px]:flex">
             <ResizablePanel minSize={480}>{chatColumn}</ResizablePanel>
-            <ResizableHandle withHandle className="border-border bg-border" />
-            <ResizablePanel defaultSize={560} minSize={400} maxSize={960} className="flex flex-col">
-              <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
+            {/* No visible line at rest — the artifact card's own rounded
+                border reads as the boundary. Hovering reveals a grip pill and
+                a "Drag to resize" label after a beat, so the affordance is
+                discoverable without being on-screen all the time. */}
+            <ResizableHandle
+              withHandle
+              className="bg-transparent"
+              handleClassName="opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-hover:delay-1000"
+            >
+              <span className="pointer-events-none absolute top-1/2 left-1/2 z-20 translate-x-3 translate-y-7 rounded-md border border-border bg-surface px-2 py-1 text-xs font-medium whitespace-nowrap text-text-2 opacity-0 shadow-card-hover transition-opacity duration-200 group-hover:opacity-100 group-hover:delay-1000">
+                Drag to resize
+              </span>
+            </ResizableHandle>
+            <ResizablePanel defaultSize={560} minSize={400} maxSize={960} className="flex flex-col py-3 pr-3">
+              {/* Floating card instead of a flush docked pane — rounded on
+                  all four corners (the border traces the curve regardless of
+                  what's behind it), bordered, and shadowed, on the same
+                  surface as the chat column. No left margin and an invisible
+                  handle mean there's no gap for a straight separator line to
+                  live in — only this card's own curved border shows. */}
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-card-hover">
+                <ArtifactView artifact={openArtifact} onClose={() => setOpenArtifact(null)} />
+              </div>
             </ResizablePanel>
           </ResizablePanelGroup>
           {/* Mobile: artifact is a full-screen overlay instead, so the chat
